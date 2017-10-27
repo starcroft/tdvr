@@ -8,13 +8,7 @@ if (PHP_SAPI === 'cli') {
 
 
 require "config.inc";
-#require "deluge.torrent.inc";
 require "transmission.torrent.inc";
-
-##$favourite_urls=get_fav_search_urls();
-#$urls=array_merge($urls, $favourite_urls);
-
-#print_r ($urls);
 
 if ($_GET['update']==1) {
 	update_feeds($urls);
@@ -22,86 +16,79 @@ if ($_GET['update']==1) {
 
 switch ($_GET['action']) {
 	
-	case "":
-	list_releases();
-	break;
-
 	case "rss":
-	build_feed();
-	break;
+		build_feed();
+		break;
 
-	case "editfavourites":
-	edit_favourites();
-	break;
+	case "listfavourites":
+		list_favourites();
+		break;
 	
 	case "listshows":
-	list_shows();
-	break;
+		list_shows();
+		break;
 	
 	case "dofavourites":
-	process_favourites();
-	break;
+		process_favourites();
+		break;
 
 	case "listreleases":
-	list_releases();
-	break;
+		list_releases();
+		break;
 
-	case "showreleaseinfo":
-	show_release_info($_GET['releaseid']);
-	break;
+	case "showreleaseinfo":	
+		show_release_info($_GET['releaseid']);
+		break;
 
 	case "downloadrelease":
-	download_release($_GET['releaseid']);
-	break;
+		download_release($_GET['releaseid']);
+		break;
 
 	case "addfavourite":
-	add_favourite($_GET['showid']);
-	break;
+		add_favourite($_GET['showid']);
+		break;
 	
 	case "ignoreshow":
-	ignore_show($_GET['showid']);
-	break;
+		ignore_show($_GET['showid']);
+		break;
 	
 	case "showepisode":
-	echo get_episode_description($_GET['show'], $_GET['season'], $_GET['episode']);
-	break;
+		echo get_episode_description($_GET['show'], $_GET['season'], $_GET['episode']);
+		break;
 	
 	case "update":
-	update_feeds($urls);
+		update_feeds($urls);
 
 	case "dofavourites":
-	process_favourites();
+		process_favourites();
 
-        case "updateshowdescription":
+	case "updateshowdescription":
         update_show_desc();
-	break;
+		break;
 
 	case "updateepisodedescription":
         update_episode_desc();
-	break;
+		break;
 
 	case "searchshow":
-	search_show($_GET['name']);
-	break;
+		search_show($_GET['name']);
+		break;
 
 	case "getepisode":
-	search_episode($_GET['show'], $_GET['season'], $_GET['episode']);
-	break;
+		search_episode($_GET['show'], $_GET['season'], $_GET['episode']);
+		break;
+
 	case "tidy":
-	tidy_up();
-	break;
+		tidy_up();
+		break;
+
+	default: 
+		list_releases();
+		break;
 }
 
 function tidy_up() {
 	global $dvrdb;
-	/*
-   * 
-* delete `releases` from `releases` where releases.episodeid in ( select episodes.episodeid from shows left join episodes on episodes.showid = shows.showid where shows.updated < date_sub(now(), INTERVAL 90 day))
-* delete `favourites` from `favourites` where favourites.showid in (select showid from shows where `ignore`=1)
-* delete `releases` from `releases` left join episodes on episodes.episodeid = `releases`.episodeid left join shows on shows.showid = episodes.showid where episodes.movieid is null and (shows.showid is null or episodes.episodeid is null)
-* delete `episodes` from `episodes` left join shows on shows.showid = episodes.showid where shows.showid is null or episodes.episodeid is null
-
-*/
 
 $sqlarray=array(
 "delete `releases` from `releases` where releases.episodeid in ( select episodes.episodeid from shows left join episodes on episodes.showid = shows.showid where shows.updated < date_sub(now(), INTERVAL 90 day))",
@@ -114,27 +101,7 @@ foreach ($sqlarray as $sql) {
 	mysql_query($sql,$dvrdb);
 }
 }
-/* =================================================================================== */
-function get_fav_search_urls() {
-	global $dvrdb;
-	$q="select shows.name from favourites
-	left join shows on shows.showid = favourites.showid
-	where shows.updated > DATE_SUB(NOW(),INTERVAL 30 DAY) and shows.updated < DATE_SUB(NOW(), INTERVAL 6 DAY)
-	and shows.ignore = 0";
-	if ($result=mysql_query($q, $dvrdb)) {
-		while ($res=mysql_fetch_assoc($result)) {
-			if ($res['name']) {
-				$name=urlencode($res['name']);
-				$back[]="http://extratorrent.cc/rss.xml?type=search&search=".$name;
-			}
-		}
-	}
-	if (is_array($back)) {
-			return($back);
-	}
-}
-
-
+/* ===================================================================================== */ 
 function show_release_info($releaseid) {
 global $dvrdb;
 $q="SELECT url FROM `releases` WHERE releaseid='$releaseid';";
@@ -157,7 +124,6 @@ function ignore_show($showid) {
 		echo mysql_error();	
 	}
 }
-# an_int_value = IF(an_int_value=1, 0, 1);
 /* ===================================================================================== */ 
 function add_favourite($showid, $quality="hdtv") {
 	global $dvrdb;
@@ -253,7 +219,6 @@ global $dvrdb, $tvdb;
 	} else {
 		$results=mysql_query("SELECT * from `shows` where `tvdb_id` =0 and shows.ignore = '0' and shows.updated > date_sub(now(), 
 INTERVAL 7 day) order by updated DESC limit 100;", $dvrdb);
-		#$results=mysql_query("SELECT * from `shows` where `tvdb_id` !=0 and `description`='' and shows.ignore = '0';", $dvrdb);
 	}
 
 		if (mysql_num_rows($results)>0) {
@@ -310,7 +275,6 @@ global $tvdb;
 /* ===================================================================================== */ 
 function search_episode ($showname, $season_number, $episode_number) {
 global $dvrdb;
-		#print "select shows.showid, episodes.episode_name from shows left join episodes on episodes.showid = shows.showid where shows.name like '$showname' and episodes.episode_number=$episode_number and episodes.season=$season_number;";
 		
 		$result=mysql_query("select shows.showid, episodes.episode_name from shows left join episodes on episodes.showid = shows.showid where shows.name like '$showname' and episodes.episode_number=$episode_number and episodes.season=$season_number;", $dvrdb);
 		if ($res=mysql_fetch_assoc($result) && $res['episode_name']){
@@ -355,7 +319,6 @@ function update_feeds($urls) {
 		$opts = array(
 	  	'http'=>array(
 	    'method' => "GET",
-	    #'proxy' => 'tcp://starcroft.org:9876',
 	    'header' => "Accept-Encoding: gzip;q=1, compress;q=1\r\n", //Sets the Accept Encoding Feature.
 	    'timeout' => 15,
 	    'user_agent' => "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1",
@@ -385,12 +348,6 @@ function update_feeds($urls) {
 				if (! $url=$item->enclosure['url'][0]) {
 						$url=$item->link;
 				}	
-				#print_r($item);
-				#print "<br>";
-				#print "==".$item->torrent->verified." == ";
-				#if ($item->author) {
-				#		print $item->author;
-				#}
 				$stamp=strtotime($datestring);
 				$title=preg_replace("#[\[\]\>]#","",$title);
 				$title=preg_replace("#\.#", " ",$title);
@@ -412,10 +369,6 @@ function update_feeds($urls) {
 					}
 					print $title." : ".$season." : ".$episode."<br>";
 					
-/*					preg_match("#s(\d+)e(\d+)#i", $release, $sbits); 
-					$season=$sbits[1];
-					$episode=$sbits[2];
-*/
 					$quality="unknown";
 					if (stristr($other, "720p")) { $quality="720p"; }
 					if (stristr($other, "1080p")) { $quality="1080p"; }
@@ -424,13 +377,13 @@ function update_feeds($urls) {
 					if ($quality == "unknown" && stristr($other, "pdtv")) { $quality="pdtv"; }
 					if ($quality == "unknown" && stristr($other, "dsr")) { $quality="dsr"; }
 					if ($quality == "unknown" && stristr($other, "web-dl")) { $quality="web"; }
-				   if ($quality == "unknown" && stristr($other, "web")) { $quality="web"; }
+				    if ($quality == "unknown" && stristr($other, "web")) { $quality="web"; }
+				    if ($quality == "unknown" && stristr($other, "AFG")) { $quality="hdtv"; }
 					$url=htmlspecialchars($url);	
 					$mysql_date=date("Y-m-d H:i:s", $stamp);
 					insert_release($show, $season, $episode, $quality, $url, $mysql_date, $priority, $title);		
 				} else {
-					print " ** ".$title."<br>";
-					
+					print " ** ".$title."<br>";	
 				}	
 			}
 			print "$new New<br>";
@@ -524,7 +477,16 @@ function list_releases() {
 global $dvrdb, $config;
 	print_html_header();
 	$ignore=($_GET['showignore'] ? 1 : 0);
-	echo "<table class='releaselist'>";
+	echo "<table class='table-sm table-responsive table-striped table-bordered'>";
+	#echo "<thead>";
+	#for ($i=0; $i<9; $i++) { 
+	#	if ($i == 4 || $i == 7) {
+	#		echo "<th class='hidden-phone hidden-tablet'>&nbsp;</th>"; 
+	#	} else {
+	#		echo "<th>&nbsp;</th>";
+	#	}
+	#}
+	#echo "</thead>";
 	if ($_GET['showid']) {
 	$q="SELECT shows.name, shows.showid, shows.description, shows.category, shows.ignore, favourites.favouriteid, favourites.season as fseason, favourites.episode as fepisode, episodes.season, episodes.episode_number, episodes.timestamp, episodes.episodeid, episodes.episode_name, episodes.downloaded as edownloaded FROM `episodes` 
 		LEFT JOIN shows ON shows.showid = episodes.showid
@@ -543,6 +505,7 @@ global $dvrdb, $config;
 		AND episodes.timestamp > date_sub(now(), INTERVAL 14 day)
 		ORDER BY episodes.timestamp desc";
 	}
+	echo "<tbody>";
 	$first=0;
 	$res=mysql_query($q, $dvrdb) or print mysql_error($dvrdb);
 	while ($relitem=mysql_fetch_assoc($res)) {
@@ -557,7 +520,8 @@ global $dvrdb, $config;
 		$show_category=stripslashes($relitem['category']);
 		$show_prefix="$show.S".$season."E".$epi_num.".";
 		if ($relitem['episode_name']) { 
-				$show_prefix.=str_replace(" ", ".", stripslashes($relitem['episode_name']))."."; }			
+				$show_prefix.=str_replace(" ", ".", stripslashes($relitem['episode_name']))."."; 
+		}			
 		$rel=mysql_query(" SELECT * FROM `releases` where episodeid='".$relitem['episodeid']."' group by quality, priority order by priority asc ;", $dvrdb);
 			$done=array();			
 			$alldone=0;
@@ -568,7 +532,6 @@ global $dvrdb, $config;
 					$line="";
 					if (! $done[$release['quality']]) {
 						$quality=$release['quality'];
-						#$alt=abs($alt-1);
 						
 						$line.= "<tr>";
 						if ($release['downloaded'] || $relitem['edownloaded']) {
@@ -587,10 +550,11 @@ global $dvrdb, $config;
 							$line.= "<td class='showlist_icon'><img id='ignore_icon_$showid' src='ignore_grey.png' onclick=\"ignoreShow($showid);\"></td>";					
 						}
 						$line.="<td class='showlist_name_long'><a href='?showid=".$relitem['showid']."'>".$relitem['name']."</a></td>";
+	    				if ( ! $_GET['showid'] ) { $line.="<td class='d-none d-md-block'>".$show_category."</td>"; }
 						$line.="<td class='showlist_season'>".$season."</td><td class='showlist_season'>".$epi_num."</td>";
-	    				$line.= "<td class='showlist_quality'>".$release['quality']."</td>";
-	    				$line.= "<td class='showlist_description'>".$relitem['episode_name']."</td>";
-						$line.= "</tr>
+	    				$line.="<td class='showlist_quality'>".$release['quality']."</td>";
+	    				$line.="<td class='d-none d-md-block'>".$relitem['episode_name']."</td>";
+						$line.="</tr>
 						";
 						$done[$release['quality']]=$line;
 						#$alldone=1;
@@ -607,7 +571,8 @@ global $dvrdb, $config;
 					echo $done['web'];
 			}
 	}
-	echo "</table>";
+	
+	echo "</tbody></table>";
 	print_html_footer();
 }
 /*----------------------------------------------------------------------------------------------------*/
@@ -663,8 +628,10 @@ global $dvrdb, $config;
 	echo $xml->asXML();
 }
 /*---------------------------------------------------------------------------------------------------*/	
-function edit_favourites() {
+function list_favourites() {
 global $dvrdb, $config;
+print_html_header();
+
 $results=mysql_query("SELECT shows.name, shows.showid, favourites.season, favourites.episode, favourites.favouriteid, favourites.quality, favourites.location, favourites.ratio 
 FROM `favourites` 
 LEFT JOIN `shows` on shows.showid = favourites.showid
@@ -680,6 +647,7 @@ while ($res=mysql_fetch_assoc($results)) {
 	echo "</tr>";
 }
 echo "</table>";
+print_html_footer();
 }
 /*---------------------------------------------------------------------------------------------------*/	
 function process_favourites() {
@@ -744,20 +712,70 @@ function log_it($code,$entry){
 /*---------------------------------------------------------------------------------------------------*/	
 function print_html_header() {
 ?>
-<html>
-<head>
-<title>tellyDvr</title>
-<link rel="stylesheet" type="text/css" href="style.css" />
-<script src="./scripts.js" type="text/javascript"></script>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>tellyDvr</title>
+	<link rel="stylesheet" type="text/css" href="style.css" />
+	<link rel="stylesheet" type="text/css" href="css/bootstrap-yeti.min.css" />
+	<link rel="stylesheet" type="text/css" href="css/custom.min.css" />
+	<script src="./scripts.js" type="text/javascript"></script>
 </head>
 <body>
-<?php		
+<?php	
+print_html_nav();	
 }
 /*----------------------------------------------------------------------------------------------------*/	
 function print_html_footer() {
 ?>
+	</div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.6/umd/popper.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-beta/js/bootstrap.min.js"></script>
 </body>
 </html>
+<?php
+}
+function print_html_nav() {
+?>
+
+<div class="navbar navbar-toggleable-md fixed-top navbar-inverse bg-primary">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="container">
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+          <a href="?" class="navbar-brand">tellyDvr</a>
+          <ul class="navbar-nav">
+            <!-- <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" id="themes">Themes <span class="caret"></span></a>
+              <div class="dropdown-menu" aria-labelledby="themes">
+                <a class="dropdown-item" href="../default/">Default</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="../cerulean/">Cerulean</a>
+              </div>
+            </li> -->
+            <li class="nav-item">
+              <a class="nav-link" href="?action=listshows">Shows</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="?action=listfavourites">Favourites</a>
+            </li>
+          </ul>
+
+          <ul class="nav navbar-nav ml-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="">Search</a>
+            </li>
+          </ul>
+
+        </div>
+      </div>
+    </div>
+    <div class="container-fluid">
 <?php
 }	
 ?>

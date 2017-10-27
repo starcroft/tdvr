@@ -1,0 +1,112 @@
+
+ 
+body {
+font-family: tahoma, verdana, "bitstream vera sans", "liberation sans";
+font-size: 1em;
+}
+
+a, a:link, a:active, a:hover {
+text-decoration: none;
+font-weight: bold;
+color: #000;
+}
+ a:hover {
+ text-decoration: underline;
+ font-weight: bolder;
+}
+.showlist, .releaselist {
+width:99%;
+font-size: 0.8em;
+table-layout: fixed;
+}
+
+.showlist tr td, .releaselist tr td {
+padding:7px;
+}
+
+.releaselist tr:nth-child(even) {background: #eee}
+.releaselist tr:nth-child(odd) {background: #ddd}
+
+.showlist_alt0 {
+background-color: #eee;
+}
+.showlist_alt1 {
+background-color: #ddd;
+}
+.showlist_icon {
+width: 10px;
+text-align:center;
+}
+.showlist_name {
+width: 250px;
+}
+.showlist_name_long {
+width: 250px;
+}
+.showlist_season {
+text-align: center;
+width: 20px;
+}
+.showlist_quality {
+text-align: center;
+width: 80px;
+}
+.showlist_description {
+font-size: 0.9em;
+word-wrap:break-word;
+width: 75%;
+    text-overflow:ellipsis;
+    overflow:hidden;
+    white-space:nowrap;
+}
+
+.showlist_description {
+font-size: 0.9em;
+word-wrap:break-word;
+width: 50%;
+    text-overflow:ellipsis;
+    overflow:hidden;
+    white-space:nowrap;
+}
+
+.showlist_althigh {
+background-color: #ffe;
+}
+.showlist_description_expand {
+    overflow:visible;
+    white-space:wrap;
+}
+
+
+.movie_title{
+	font-size: 1.8em;
+	font-weight: bold;
+}
+.movie_category{
+}
+
+.row {
+padding: 2em;
+#background-color: #ddd;
+border-bottom: 0.5em white solid;
+
+}
+
+#movielist div.row:nth-child(even){
+  background-color: #e6e6e6;
+}
+#movielist div.row:nth-child(odd){
+  background-color: #d6d6d6;
+}
+
+.movie_poster {
+	 box-shadow: 5px 5px 5px rgba(0,0,0, 0.55);
+	 #margin-bottom: 10px;
+}
+.col-xs-3.img {
+margin-bottom: 10px;
+}
+
+.movie_description {
+	font-size: 1.2em;
+}

@@ -41,7 +41,7 @@ text-align:center;
 width: 250px;
 }
 .showlist_name_long {
-width: 250px;
+width: 30%;
 }
 .showlist_season {
 text-align: center;
@@ -59,7 +59,14 @@ width: 75%;
     overflow:hidden;
     white-space:nowrap;
 }
-
+.showlist_episode {
+font-size: 0.9em;
+word-wrap:break-word;
+width: 25%;
+    text-overflow:ellipsis;
+    overflow:hidden;
+    white-space:nowrap;
+}
 .showlist_description {
 font-size: 0.9em;
 word-wrap:break-word;

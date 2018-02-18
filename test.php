@@ -1,5 +1,5 @@
 <?php
-
-print $_SERVER['database-name'];
-
+foreach ($_SERVER as $var => $val) {
+	print $var." ".$val."<br>";
+}
 ?>

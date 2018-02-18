@@ -1,5 +1,5 @@
 <?php
-foreach ($_SERVER as $var => $val) {
+foreach ($_ENV as $var => $val) {
 	print $var." ".$val."<br>";
 }
 ?>

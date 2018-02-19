@@ -16,7 +16,7 @@ $apiKey = '';
 
 #$tvdb = new Client("http://thetvdb.com", $apiKey);
 
-$dvrdb= mysql_connect($_ENV['MARIADB_PORT'], $_ENV['MYSQL_DB_USERNAME'] ,$_ENV['MYSQL_DB_PASSWORD'])
+$dvrdb= mysql_connect($_ENV['MARIADB_SERVICE_HOST'], $_ENV['MYSQL_DB_USERNAME'] ,$_ENV['MYSQL_DB_PASSWORD'])
  or exit('Could not connect: ' . mysql_error()); 
 $db = mysql_select_db($_ENV['MYSQL_DB_NAME'], $dvrdb);
 

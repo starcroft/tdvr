@@ -1,0 +1,3 @@
+[submodule "TvDb"]
+	path = TvDb
+	url = https://github.com/Moinax/TvDb.git

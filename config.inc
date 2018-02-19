@@ -4,17 +4,17 @@ error_reporting(E_ERROR | E_WARNING | E_PARSE);
 
 $config=array("api_url"=>"", "api_user"=>"", "api_password"=>"");
 
-#include __DIR__ . '/Moinax/TvDb/Http/HttpClient.php';
-#include __DIR__ . '/Moinax/TvDb/Http/CurlClient.php';
-#include __DIR__ . '/Moinax/TvDb/CurlException.php';
-#include __DIR__ . '/Moinax/TvDb/Client.php';
-#include __DIR__ . '/Moinax/TvDb/Serie.php';
-#include __DIR__ . '/Moinax/TvDb/Banner.php';
-#include __DIR__ . '/Moinax/TvDb/Episode.php';
-#use Moinax\TvDb\Client;
+include './Moinax/TvDb/Http/HttpClient.php';
+include './Moinax/TvDb/Http/CurlClient.php';
+include './Moinax/TvDb/CurlException.php';
+include './Moinax/TvDb/Client.php';
+include './Moinax/TvDb/Serie.php';
+include './Moinax/TvDb/Banner.php';
+include './Moinax/TvDb/Episode.php';
+use Moinax\TvDb\Client;
 $apiKey = '';
 
-#$tvdb = new Client("http://thetvdb.com", $apiKey);
+$tvdb = new Client("http://thetvdb.com", $apiKey);
 
 $dvrdb= mysql_connect($_ENV['MARIADB_SERVICE_HOST'], $_ENV['MYSQL_DB_USERNAME'] ,$_ENV['MYSQL_DB_PASSWORD'])
  or exit('Could not connect: ' . mysql_error()); 

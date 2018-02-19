@@ -25,9 +25,6 @@ $urls=array(
 "https://www.scenetime.com/get_rss.php?feed=direct",
 );
 
-$movie_urls=array(
-"",
-);
 
 $video_list=array("x264", "h264", "xvid", "divx", "avc", "vc1");
 $audio_list=array("ac3", "dd5", "dts", "aac", "flac");

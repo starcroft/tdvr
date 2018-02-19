@@ -12,7 +12,7 @@ include './Moinax/TvDb/Serie.php';
 include './Moinax/TvDb/Banner.php';
 include './Moinax/TvDb/Episode.php';
 use Moinax\TvDb\Client;
-$apiKey = '';
+$apiKey = $_ENV['TVDB_API_KEY];
 
 $tvdb = new Client("http://thetvdb.com", $apiKey);
 

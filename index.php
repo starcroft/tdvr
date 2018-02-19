@@ -25,7 +25,7 @@ switch ($_GET['action']) {
 		break;
 	
 	case "listshows":
-		list_shows();
+		list_shows($_GET['search']);
 		break;
 	
 	case "dofavourites":
@@ -64,7 +64,6 @@ switch ($_GET['action']) {
 
 	case "updateshowdescription":
         update_show_desc();
-		break;
 
 	case "updateepisodedescription":
         update_episode_desc();
@@ -118,10 +117,16 @@ $q="SELECT url FROM `releases` WHERE releaseid='$releaseid';";
 function ignore_show($showid) {
 	global $dvrdb;
 	$q="UPDATE `shows` SET `ignore`=IF(`ignore`=1, 0, 1) WHERE `showid`='$showid';";
+	
 	if ($res=mysql_query($q, $dvrdb)) {
-		echo "OK";	
-	} else {
-		echo mysql_error();	
+	$q="SELECT `ignore` from `shows` WHERE `showid`='$showid';";
+	$res=mysql_query($q, $dvrdb);
+	$result=mysql_fetch_assoc($res);
+	if ($result['ignore']==1) {
+			echo "ignore";	
+		} else {
+			echo "show";	
+		}
 	}
 }
 /* ===================================================================================== */ 
@@ -138,39 +143,46 @@ function add_favourite($showid, $quality="hdtv") {
    }
 }
 /* ===================================================================================== */ 
-function list_shows() {
+function list_shows($search) {
 global $dvrdb;
 	print_html_header();
-
+if ($search) {
+		$search=preg_replace("/^[a-z0-9\s]/", "", $search);
+		$q="SELECT shows.showid, shows.name, shows.description, shows.category, shows.ignore, favourites.favouriteid
+		FROM `shows` 
+		LEFT JOIN `favourites` on favourites.showid = shows.showid
+		WHERE shows.name like '%$search%'		
+		ORDER BY shows.updated desc";
+}else{	
 $q="SELECT shows.showid, shows.name, shows.description, shows.category, shows.ignore, favourites.favouriteid
 		FROM `shows` 
 		LEFT JOIN `favourites` on favourites.showid = shows.showid
 		WHERE `ignore`='0'		
 		ORDER BY shows.updated desc";
-
+}
 $results=mysql_query($q, $dvrdb);	
-		echo "<table class='showlist'>";
+		echo "<table class='table table-condensed table-striped table-responsive'>";
+		echo "<tbody>";
 		if (mysql_num_rows($results)>0) {
 			while ($res=mysql_fetch_assoc($results)) {		
-						$showid=$res['showid'];
-					 $alt=abs($alt-1);		
-					 echo "<tr class='showlist_alt$alt' onmouseover=\"this.className='showlist_althigh'\" onmouseout=\"this.className='showlist_alt$alt'\">";
-										 
+					$showid=$res['showid'];	
+					 echo "<tr>";
 					 if ($res['favouriteid']) {
-					 	echo "<td class='showlist_icon'><img id='favourite_icon_$showid' src='favourite.png'></td>";
+					 	echo "<td class='showlist_icon'><img id='favourite_icon_$showid' src='favourite.png' onclick=\"addFavourite($showid, '');\"></td>";
 					 } else {
 					 	echo "<td class='showlist_icon'><img id='favourite_icon_$showid' src='favourite_grey.png' onclick=\"addFavourite($showid, '');\"></td>";
 					 }
 					if ($res['ignore']) {
-						echo "<td class='showlist_icon'><img id='ignore_icon_$showid' src='ignore.png'\"></td>";
+						echo "<td class='showlist_icon'><img id='ignore_icon_$showid' src='ignore.png' onclick=\"ignoreShow($showid);\"></td>";
 					}	else {
 						echo "<td class='showlist_icon'><img id='ignore_icon_$showid' src='ignore_grey.png' onclick=\"ignoreShow($showid);\"></td>";					
 					}				 
-					 echo "<td class='showlist_name'>".$res['name']."</td>
-					 <td class='showlist_description' onmouseover=\"this.className='showlist_description_expand'\" onmouseout=\"this.className='showlist_description'\">".$res['description']."</td></tr>";
+					 echo "<td class='showlist_name_long'>".$res['name']."</td>
+					 <td class='showlist_description'\">".$res['description']."</td>";
+					 echo "</tr>";
 				}				
 		}
-	echo "</table>";
+	echo "</tbody></table>";
 	print_html_footer();
 }
 /* ===================================================================================== */ 
@@ -206,7 +218,7 @@ global $dvrdb;
 			while ($res=mysql_fetch_assoc($results)) {							
 					$id=$res['episodeid'];
 					$overview=addslashes(get_episode_description($res['showid'], $res['season'], $res['episode_number']));
-					print $overview."<BR>";
+					#print $overview."<BR>";
 					mysql_query("UPDATE `episodes` SET `episode_name`='$overview' where episodeid='$id';", $dvrdb); 
 				}				
 		}
@@ -217,7 +229,7 @@ global $dvrdb, $tvdb;
 	if ($show_name) {
 		$results=mysql_query("SELECT * from `shows` where (`description`='' or `tvdb_id`=0) and shows.ignore= '0' and `name`='$show_name';", $dvrdb);	
 	} else {
-		$results=mysql_query("SELECT * from `shows` where `tvdb_id` =0 and shows.ignore = '0' and shows.updated > date_sub(now(), 
+		$results=mysql_query("SELECT * from `shows` where `tvdb_id`=0 and shows.ignore = '0' and shows.updated > date_sub(now(), 
 INTERVAL 7 day) order by updated DESC limit 100;", $dvrdb);
 	}
 
@@ -298,14 +310,16 @@ global $dvrdb,$tvdb;
 					
 					$season_number=intval($season_number);
 					$episode_number=intval($episode_number);
-					print "id:$tvdb_id $season_number $episode_number <br>";
+					print "id : $tvdb_id $season_number $episode_number : ";
 					if ($tvdb_id && $episode_info=$tvdb->getEpisode($tvdb_id, $season_number,$episode_number)) {
-						print "getting episode<br>";
+						#print "getting episode<br>";
 						#var_dump($episode_info);
 						if ($episode_info->name) {	
-							#var_dump($episode_info->name);			 
+							#var_dump($episode_info->name);
+							print $episode_info->name."<br>";			 
 							return($episode_info->name);	
 						} else{
+							print "unknown <br>";
 							return("unknown");
 						}
 					}
@@ -420,7 +434,7 @@ global $dvrdb;
 			$rid=$id['episodeid'];
 		} else {
 
-			#$episode_description=addslashes(get_episode_description($showid, $season_number, $episode_number));
+			$episode_description=addslashes(get_episode_description($showid, $season_number, $episode_number));
 			if (mysql_query("INSERT INTO episodes (showid, season, episode_number, episode_name, timestamp) VALUES ('$showid', '$season_number', '$episode_number','$episode_description', '$stamp');", $dvrdb)) {
 				$id=mysql_insert_id();
 				mysql_query("UPDATE `shows` SET `updated` = '$stamp' WHERE `showid` = '$showid';",$dvrdb);
@@ -440,11 +454,11 @@ global $dvrdb;
 			$id=mysql_fetch_assoc($results);
 			return($id['showid']);
 		} else {
-			#if ($show_info=get_show_info($show_name)) {
-			#	$tvdb_id=$show_info['tvdb_id'];
-			#	$show_description=addslashes($show_info['description']);
-			#	$show_category=addslashes($show_info['category']);			
-			#}
+			if ($show_info=get_show_info($show_name)) {
+				$tvdb_id=$show_info['tvdb_id'];
+				$show_description=addslashes($show_info['description']);
+				$show_category=addslashes($show_info['category']);			
+			}
 			if (mysql_query("INSERT INTO shows (name,description,category,tvdb_id) VALUES ('$sql_name','$show_description', '$show_category', '$tvdb_id');", $dvrdb)) {
 				return(mysql_insert_id());	
 			} else {
@@ -477,26 +491,28 @@ function list_releases() {
 global $dvrdb, $config;
 	print_html_header();
 	$ignore=($_GET['showignore'] ? 1 : 0);
-	echo "<table class='table-sm table-responsive table-striped table-bordered'>";
-	#echo "<thead>";
-	#for ($i=0; $i<9; $i++) { 
-	#	if ($i == 4 || $i == 7) {
-	#		echo "<th class='hidden-phone hidden-tablet'>&nbsp;</th>"; 
-	#	} else {
-	#		echo "<th>&nbsp;</th>";
-	#	}
-	#}
-	#echo "</thead>";
-	if ($_GET['showid']) {
+	echo "<table class='table table-condensed table-striped'>";
+	$showid=$_GET['showid'] ? clean_number($_GET['showid']) : "";
+	$search=$_GET['search'] ? clean_text($_GET['search']) : "";
+	
+	if ($showid) {
+		
 	$q="SELECT shows.name, shows.showid, shows.description, shows.category, shows.ignore, favourites.favouriteid, favourites.season as fseason, favourites.episode as fepisode, episodes.season, episodes.episode_number, episodes.timestamp, episodes.episodeid, episodes.episode_name, episodes.downloaded as edownloaded FROM `episodes` 
 		LEFT JOIN shows ON shows.showid = episodes.showid
 		LEFT JOIN `favourites` on favourites.showid = episodes.showid
-		WHERE episodes.showid = '".$_GET['showid']."'
-		AND shows.showid='".$_GET['showid']."'
+		WHERE episodes.showid = '".$showid."'
+		AND shows.showid='".$showid."'
 		ORDER BY episodes.timestamp desc
 		LIMIT 100;
 		";
-		
+	} elseif ($search) {
+	$q="SELECT shows.name, shows.showid, shows.description, shows.category, shows.ignore, favourites.favouriteid, favourites.season as fseason, favourites.episode as fepisode, episodes.season, episodes.episode_number, episodes.timestamp, episodes.episodeid, episodes.episode_name, episodes.downloaded as edownloaded FROM `episodes` 
+		LEFT JOIN shows ON shows.showid = episodes.showid
+		LEFT JOIN `favourites` on favourites.showid = episodes.showid
+		WHERE shows.name like '%".$search."%'
+		ORDER BY episodes.timestamp desc
+		LIMIT 100;
+		";		
 	} else {
 			$q="SELECT shows.name, shows.showid, shows.description, shows.category, shows.ignore, favourites.favouriteid, favourites.season as fseason, favourites.episode as fepisode, episodes.season, episodes.episode_number, episodes.timestamp, episodes.episodeid, episodes.episode_name, episodes.downloaded as edownloaded FROM `episodes` 
 		LEFT JOIN shows ON shows.showid = episodes.showid
@@ -516,12 +532,10 @@ global $dvrdb, $config;
 		$epi_num=str_pad($relitem['episode_number'], 2, "0", STR_PAD_LEFT);
 		$season=str_pad($relitem['season'], 2, "0", STR_PAD_LEFT);
 		$show=str_replace(" ",".",stripslashes($relitem['name']));
-		$show_description=stripslashes($relitem['description']);
-		$show_category=stripslashes($relitem['category']);
-		$show_prefix="$show.S".$season."E".$epi_num.".";
-		if ($relitem['episode_name']) { 
-				$show_prefix.=str_replace(" ", ".", stripslashes($relitem['episode_name']))."."; 
-		}			
+		$show_description=$relitem['description'] ? stripslashes($relitem['description']) : "&nbsp;";
+		$show_category=$relitem['category'] ? stripslashes($relitem['category']) : "&nbsp;";
+		$episode_name=$relitem['episode_name'] ? stripslashes($relitem['episode_name']) : "&nbsp;";
+			
 		$rel=mysql_query(" SELECT * FROM `releases` where episodeid='".$relitem['episodeid']."' group by quality, priority order by priority asc ;", $dvrdb);
 			$done=array();			
 			$alldone=0;
@@ -530,6 +544,7 @@ global $dvrdb, $config;
 					$showid=$relitem['showid'];
 					$releaseid=$release['releaseid'];
 					$line="";
+					
 					if (! $done[$release['quality']]) {
 						$quality=$release['quality'];
 						
@@ -550,10 +565,10 @@ global $dvrdb, $config;
 							$line.= "<td class='showlist_icon'><img id='ignore_icon_$showid' src='ignore_grey.png' onclick=\"ignoreShow($showid);\"></td>";					
 						}
 						$line.="<td class='showlist_name_long'><a href='?showid=".$relitem['showid']."'>".$relitem['name']."</a></td>";
-	    				if ( ! $_GET['showid'] ) { $line.="<td class='d-none d-md-block'>".$show_category."</td>"; }
+	    				//if ( ! $_GET['showid'] ) { $line.="<td class='showlist_category hidden-sm hidden-xs'>".$show_category."</td>"; }
 						$line.="<td class='showlist_season'>".$season."</td><td class='showlist_season'>".$epi_num."</td>";
 	    				$line.="<td class='showlist_quality'>".$release['quality']."</td>";
-	    				$line.="<td class='d-none d-md-block'>".$relitem['episode_name']."</td>";
+	    				$line.="<td class='showlist_episode hidden-sm hidden-xs'>".$episode_name."</td>";
 						$line.="</tr>
 						";
 						$done[$release['quality']]=$line;
@@ -635,18 +650,35 @@ print_html_header();
 $results=mysql_query("SELECT shows.name, shows.showid, favourites.season, favourites.episode, favourites.favouriteid, favourites.quality, favourites.location, favourites.ratio 
 FROM `favourites` 
 LEFT JOIN `shows` on shows.showid = favourites.showid
-ORDER BY shows.name;") or print mysql_error();
-echo "<table class='editfavourites'>";
+WHERE shows.name is not null
+ORDER BY shows.updated DESC;") or print mysql_error();
+$qarray=array("720p", "hdtv", "pdtv");
+$headarray=array("Name", "S", "E");
+$headarray=array_merge($headarray, $qarray);
+
+echo "<table class='table table-condensed table-striped'><thead>";
+foreach ($headarray as $head) {
+	echo "<th>$head</th>";
+}
+echo "</thead><tbody>";
 while ($res=mysql_fetch_assoc($results)) {
 	$alt=abs($alt-1);
-	echo "<tr class='show_list_alt$alt'>";
-	echo "<td>".$res['favouriteid']."</td>";
+	echo "<tr>";
+	
 	echo "<td>".$res['name']."</td>";
 	echo "<td>".$res['season']."</td>";	
 	echo "<td>".$res['episode']."</td>";
+	foreach ($qarray as $q) {
+		if (stristr($res['quality'], $q)) {
+			$checked="checked";
+		} else {	
+			$checked="";
+		}
+		echo "<td><input type='checkbox' value='".$res['favouriteid']."-".$q."' $checked></td>";
+	}	
 	echo "</tr>";
 }
-echo "</table>";
+echo "</tbody></table>";
 print_html_footer();
 }
 /*---------------------------------------------------------------------------------------------------*/	
@@ -703,11 +735,19 @@ if ($results=mysql_query($q, $dvrdb)) {
 	}
 }
 }
+function clean_number($number) {
+		$number=preg_replace("/[^0-9]/", "", $number);
+		return(abs($number));
+}
+function clean_text($string) {
+		$string=preg_replace("/[^a-z0-9\s]/i", "", $string);
+		return ($string);
+}
 /*---------------------------------------------------------------------------------------------------*/	
 function log_it($code,$entry){
 	global $dvrdb;
-	$entry=addslashes($entry);
-	mysql_query("INSERT INTO `log` (`error`, `text`) VALUES ('$code', '$entry');", $dvrdb) or print mysql_error();
+	#$entry=addslashes($entry);
+	#mysql_query("INSERT INTO `log` (`error`, `text`) VALUES ('$code', '$entry');", $dvrdb) or print mysql_error();
 }
 /*---------------------------------------------------------------------------------------------------*/	
 function print_html_header() {
@@ -719,10 +759,10 @@ function print_html_header() {
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>tellyDvr</title>
+	<link rel="stylesheet" type="text/css" href="css/bootstrap-united.min.3.css" />
+	<link href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css" rel="stylesheet">
 	<link rel="stylesheet" type="text/css" href="style.css" />
-	<link rel="stylesheet" type="text/css" href="css/bootstrap-yeti.min.css" />
-	<link rel="stylesheet" type="text/css" href="css/custom.min.css" />
-	<script src="./scripts.js" type="text/javascript"></script>
+	<script src="./scripts.js?" type="text/javascript"></script>
 </head>
 <body>
 <?php	
@@ -734,48 +774,53 @@ function print_html_footer() {
 	</div>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.6/umd/popper.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-beta/js/bootstrap.min.js"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-beta/js/bootstrap.min.js"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
 </body>
 </html>
 <?php
 }
+/*----------------------------------------------------------------------------------------------------*/
 function print_html_nav() {
+
+$action=$_GET['action'] ? clean_text($_GET['action']) : "listreleases";
+$search=$_GET['search'] ? clean_text($_GET['search']) : "";
 ?>
-
-<div class="navbar navbar-toggleable-md fixed-top navbar-inverse bg-primary">
-      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
+    <div class="navbar navbar-default navbar-fixed-top">
       <div class="container">
-        <div class="collapse navbar-collapse" id="navbarResponsive">
-          <a href="?" class="navbar-brand">tellyDvr</a>
-          <ul class="navbar-nav">
-            <!-- <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" id="themes">Themes <span class="caret"></span></a>
-              <div class="dropdown-menu" aria-labelledby="themes">
-                <a class="dropdown-item" href="../default/">Default</a>
-                <div class="dropdown-divider"></div>
-                <a class="dropdown-item" href="../cerulean/">Cerulean</a>
-              </div>
-            </li> -->
-            <li class="nav-item">
-              <a class="nav-link" href="?action=listshows">Shows</a>
+        <div class="navbar-header">
+          <a href="?action=listreleases" class="navbar-brand">tellyDvr</a>
+          <button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#navbar-main">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+        </div>
+        <div class="navbar-collapse collapse" id="navbar-main">
+          <ul class="nav navbar-nav">
+            <li>
+              <a href="?action=listshows">Shows</a>
             </li>
-            <li class="nav-item">
-              <a class="nav-link" href="?action=listfavourites">Favourites</a>
-            </li>
-          </ul>
-
-          <ul class="nav navbar-nav ml-auto">
-            <li class="nav-item">
-              <a class="nav-link" href="">Search</a>
+            <li>
+              <a href="?action=listfavourites">Favourites</a>
             </li>
           </ul>
-
+		<div class="col-sm-3 col-md-4 col-lg-4 navbar-right">
+			<form class="navbar-form" role="search" action="?action=listshows">
+			<input type="hidden" name="action" value="<?php echo $action; ?>">
+			<div class="input-group">
+				<input type="text" class="form-control" placeholder="Search" name="search" value="<?php echo $search; ?>">
+				<div class="input-group-btn">
+					<button class="btn btn-default" type="submit"><i class="glyphicon glyphicon-search"></i></button>
+				</div>
+			</div>
+			</form>
+		</div>
         </div>
       </div>
     </div>
-    <div class="container-fluid">
+
+    <div id="mainbody" class="container-fluid">
 <?php
 }	
 ?>

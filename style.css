@@ -1,11 +1,9 @@
 
- 
-body {
-font-family: tahoma, verdana, "bitstream vera sans", "liberation sans";
-font-size: 1em;
-}
-
-a, a:link, a:active, a:hover {
+#mainbody {
+padding-top:30px;
+margin-top:30px;
+} 
+a, a:visited, a:link, a:active, a:hover {
 text-decoration: none;
 font-weight: bold;
 color: #000;
@@ -16,7 +14,7 @@ color: #000;
 }
 .showlist, .releaselist {
 width:99%;
-font-size: 0.8em;
+font-size: 0.7em;
 table-layout: fixed;
 }
 
@@ -24,15 +22,6 @@ table-layout: fixed;
 padding:7px;
 }
 
-.releaselist tr:nth-child(even) {background: #eee}
-.releaselist tr:nth-child(odd) {background: #ddd}
-
-.showlist_alt0 {
-background-color: #eee;
-}
-.showlist_alt1 {
-background-color: #ddd;
-}
 .showlist_icon {
 width: 10px;
 text-align:center;
@@ -41,7 +30,8 @@ text-align:center;
 width: 250px;
 }
 .showlist_name_long {
-width: 30%;
+width: 50%;
+min-width: 50%;
 }
 .showlist_season {
 text-align: center;
@@ -49,37 +39,26 @@ width: 20px;
 }
 .showlist_quality {
 text-align: center;
-width: 80px;
-}
-.showlist_description {
-font-size: 0.9em;
-word-wrap:break-word;
-width: 75%;
-    text-overflow:ellipsis;
-    overflow:hidden;
-    white-space:nowrap;
+width: 60px;
 }
 .showlist_episode {
-font-size: 0.9em;
-word-wrap:break-word;
+width: 15%;
+}
+.showlist_category {
 width: 25%;
-    text-overflow:ellipsis;
-    overflow:hidden;
-    white-space:nowrap;
 }
 .showlist_description {
-font-size: 0.9em;
 word-wrap:break-word;
 width: 50%;
-    text-overflow:ellipsis;
-    overflow:hidden;
-    white-space:nowrap;
+max-width: 50%;
+white-space:nowrap;
 }
 
 .showlist_althigh {
 background-color: #ffe;
 }
 .showlist_description_expand {
+	width: 50%;
     overflow:visible;
     white-space:wrap;
 }

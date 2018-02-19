@@ -7,9 +7,13 @@ function ignoreShow(showid) {
 
 	xmlhttp.onreadystatechange=function() {
 		if (xmlhttp.readyState==4 && xmlhttp.status==200) {
-			if (xmlhttp.responseText == "OK") {
+			if (xmlhttp.responseText == "ignore") {
 				idname="ignore_icon_" + showid;
 			   document.getElementById(idname).src="ignore.png";
+			}
+			if (xmlhttp.responseText == "show") {
+				idname="ignore_icon_" + showid;
+			   document.getElementById(idname).src="ignore_grey.png";
 			}
 		}
 	}	

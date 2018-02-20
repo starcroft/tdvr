@@ -12,13 +12,13 @@ include './Moinax/TvDb/Serie.php';
 include './Moinax/TvDb/Banner.php';
 include './Moinax/TvDb/Episode.php';
 use Moinax\TvDb\Client;
-$apiKey = $_ENV['TVDB_API_KEY'];
+$apiKey = getenv('TVDB_API_KEY');
 
 $tvdb = new Client("http://thetvdb.com", $apiKey);
 
-$dvrdb= mysql_connect($_ENV['MARIADB_SERVICE_HOST'], $_ENV['MYSQL_DB_USERNAME'] ,$_ENV['MYSQL_DB_PASSWORD'])
+$dvrdb= mysql_connect(getenv('MARIADB_SERVICE_HOST'), getenv('MYSQL_DB_USERNAME') ,getenv('MYSQL_DB_PASSWORD'))
  or exit('Could not connect: ' . mysql_error()); 
-$db = mysql_select_db($_ENV['MYSQL_DB_NAME'], $dvrdb);
+$db = mysql_select_db(getenv('MYSQL_DB_NAME'), $dvrdb);
 
 $urls=array(
 "https://www.torrenting.com/get_rss.php?feed=direct",

@@ -329,7 +329,10 @@ global $dvrdb,$tvdb;
 function update_feeds($urls) {
 	global $config, $dvrdb;
 	$priority=0;
-	foreach ($urls as $url) {
+	$results=mysql_query("select url,priority from feeds", $dvrdb);
+	while ($relitem=mysql_fetch_assoc($results)) {
+		$url=$relitem['url'];
+		$priority=$relitem['priority'];
 		$opts = array(
 	  	'http'=>array(
 	    'method' => "GET",
@@ -343,7 +346,6 @@ function update_feeds($urls) {
 		$context = stream_context_create($opts);
 		$new=0;
 		print "$url :";
-		$priority++;
 		if ($page=file_get_contents($url, false, $context)) {
 			if (in_array("Content-Encoding: gzip", $http_response_header)) {
 				if ($gpage=&gzinflate(substr($page, 10, -8))) {
@@ -352,13 +354,10 @@ function update_feeds($urls) {
 			}
 			
 			$feed= new SimpleXMLElement($page);
-	
 			foreach ($feed->channel[0]->item as $item) {
-
 				$title=$item->title;
 				$category=$item->category;
 				$datestring=$item->pubDate;
-		
 				if (! $url=$item->enclosure['url'][0]) {
 						$url=$item->link;
 				}	
@@ -397,7 +396,7 @@ function update_feeds($urls) {
 					$mysql_date=date("Y-m-d H:i:s", $stamp);
 					insert_release($show, $season, $episode, $quality, $url, $mysql_date, $priority, $title);		
 				} else {
-					print " ** ".$title."<br>";	
+					#print " ** ".$title."<br>";	
 				}	
 			}
 			print "$new New<br>";

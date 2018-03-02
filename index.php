@@ -155,8 +155,15 @@ function set_favourite($favourite, $quality, $set) {
 	$set=clean_number($set);
 	
 	if ($favourite && $quality && $set) {
-		$q="select quality from favourites where favouriteid='$favourite';";
-
+		$result=mysql_query("select quality from favourites where favouriteid='$favourite';", $dvrdb);
+		   	if ($res=mysql_fetch_assoc($result)) {
+				$qlist=$res['quality'];
+				$qlist=str_replace($quality, "", $qlist);
+				if ($set == 1) {
+					$qlist.=" $quality";
+				}
+			$result=mysql_query("update favourites set quality='$qlist' where favouriteid='$favourite'");	
+			}				
 	}
 }
 /* ===================================================================================== */ 

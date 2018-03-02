@@ -47,7 +47,10 @@ switch ($_GET['action']) {
 	case "addfavourite":
 		add_favourite($_GET['showid']);
 		break;
-	
+	case "setfavourite":
+		set_favourite($_GET['favouriteid'], $_GET['quality'], $_GET['set']);	
+		break;
+
 	case "ignoreshow":
 		ignore_show($_GET['showid']);
 		break;
@@ -100,9 +103,12 @@ foreach ($sqlarray as $sql) {
 	mysql_query($sql,$dvrdb);
 }
 }
+
 /* ===================================================================================== */ 
 function show_release_info($releaseid) {
 global $dvrdb;
+$releaseid=clean_number($releaseid);
+
 $q="SELECT url FROM `releases` WHERE releaseid='$releaseid';";
    if ($result=mysql_query($q, $dvrdb)) {
    	if ($res=mysql_fetch_assoc($result)) {
@@ -131,7 +137,7 @@ function ignore_show($showid) {
 }
 /* ===================================================================================== */ 
 function add_favourite($showid, $quality="hdtv") {
-	global $dvrdb;
+global $dvrdb;
    if ($result=mysql_query("SELECT favouriteid FROM favourites WHERE showid = '$showid';", $dvrdb)) {
    	if ($res=mysql_fetch_assoc($result)) {
 			print "exists";   	
@@ -141,6 +147,13 @@ function add_favourite($showid, $quality="hdtv") {
 			}
    	}
    }
+}
+
+function set_favourite($favourite, $quality, $set) {
+	if ($favourite && $quality && $set) {
+		$q="select quality from favourites where
+
+	}
 }
 /* ===================================================================================== */ 
 function list_shows($search) {
@@ -673,7 +686,8 @@ while ($res=mysql_fetch_assoc($results)) {
 		} else {	
 			$checked="";
 		}
-		echo "<td><input type='checkbox' value='".$res['favouriteid']."-".$q."' $checked></td>";
+		echo "<td><input type='checkbox' id='".$res['favouriteid']."-".$q."' $checked onchange='toggleFavourite(".$res['favouriteid'].",\"$q\");'></td>";
+
 	}	
 	echo "</tr>";
 }

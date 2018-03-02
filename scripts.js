@@ -56,3 +56,17 @@ function addFavourite(showid, quality) {
 	xmlhttp.open("GET","?action=addfavourite&showid="+showid+"&quality="+quality,true);
 	xmlhttp.send();	
 }
+function toggleFavourite(favid, quality) {
+  if (document.getElementById(favid + "-" + quality).checked) {
+      set=1
+  } else {
+      set=0
+  }
+  if (window.XMLHttpRequest) {
+	xmlhttp=new XMLHttpRequest();
+  } else {
+        xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+  }
+  xmlhttp.open("GET","?action=setfavourite&favouriteid="+favid+"&quality="+quality+"&set="+set,true);
+  xmlhttp.send();
+}

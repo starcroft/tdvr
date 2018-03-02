@@ -329,7 +329,7 @@ global $dvrdb,$tvdb;
 function update_feeds($urls) {
 	global $config, $dvrdb;
 	$priority=0;
-	$results=mysql_query("select url,priority from feeds", $dvrdb);
+	$results=mysql_query("select url,priority from feeds order by priority desc", $dvrdb);
 	while ($relitem=mysql_fetch_assoc($results)) {
 		$url=$relitem['url'];
 		$priority=$relitem['priority'];

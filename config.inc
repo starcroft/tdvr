@@ -2,7 +2,7 @@
 ini_set('error_reporting', E_ERROR);
 error_reporting(E_ERROR | E_WARNING | E_PARSE);
 
-$config=array("api_url"=>"", "api_user"=>"", "api_password"=>"");
+$config=array("api_url"=>getenv('BACKEND_URL'), "api_user"=>getenv('BACKEND_USERNAME'), "api_password"=>getenv('BACKEND_PASSWORD'));
 
 include './Moinax/TvDb/Http/HttpClient.php';
 include './Moinax/TvDb/Http/CurlClient.php';

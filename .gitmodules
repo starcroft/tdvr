@@ -1,3 +1,6 @@
 [submodule "TvDb"]
 	path = TvDb
 	url = https://github.com/Moinax/TvDb.git
+[submodule "TVMaze-PHP-API-Wrapper"]
+	path = TVMaze-PHP-API-Wrapper
+	url = git@github.com:JPinkney/TVMaze-PHP-API-Wrapper.git

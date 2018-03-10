@@ -19,7 +19,10 @@ switch ($_GET['action']) {
 	case "rss":
 		build_feed();
 		break;
-
+    case "getposter": 
+		get_tvdb_poster($_GET['id']);
+		break;
+		
 	case "listfavourites":
 		list_favourites();
 		break;
@@ -259,34 +262,20 @@ global $dvrdb, $tvdb;
 	if ($show_name) {
 		$results=mysql_query("SELECT * from `shows` where (`description`='' or `tvdb_id`=0) and shows.ignore= '0' and `name`='$show_name';", $dvrdb);	
 	} else {
-		$results=mysql_query("SELECT * from `shows` where `tvdb_id`=0 and shows.ignore = '0' and shows.updated > date_sub(now(), INTERVAL 7 day) order by updated DESC limit 100;", $dvrdb);
+		$results=mysql_query("SELECT * from `shows` where (`description`='' or `poster`='' or `poster` is null) and shows.ignore = '0' and shows.updated > date_sub(now(), INTERVAL 7 day) order by updated DESC limit 100;", $dvrdb);
 	}
 	if (mysql_num_rows($results)>0) {
 			while ($res=mysql_fetch_assoc($results)) {	
-				$yearinname="";
-				if (preg_match('/20[0-9]{2}/', $res['name'], $match)) {
-					$yearinname=$match[0];
-				}
-				if ($yearinname) { 
-					$name=preg_replace("/$yearinname/", "", $res['name']); 
-				} else {
-					$name=$res['name'];
-				}
-				$shows = $tvdb->getSeries($name);			
-				if ($show=$shows[0]) {				
-					$category="";
-					foreach ($show->genres as $genre) { $category.=$genre.","; }
-					$category=preg_replace("#,$#","",$category);									
-					$overview=addslashes($show->overview);
-					$category=addslashes($category);
-					$id=$res['showid'];
-					$tvdb_id=$show->id;
+				$name=$res['name'];
+				$id=$res['showid'];
+				$show=get_show_info($name);
+				if ($show['description']) {	
 					print $name."<br>";
 					print_r($show);
 					print "<hr>";
-					mysql_query("UPDATE `shows` SET `tvdb_id`=$tvdb_id, `description`='$overview', `category`='$category' where showid='$id';", $dvrdb); 
+					mysql_query("UPDATE `shows` SET `tvdb_id`='".$show['tvdb_id']."', `description`='".addslashes($show['description'])."', `category`='".addslashes($show['category'])."', `poster`='".addslashes($show['poster'])."' where showid='$id';", $dvrdb); 
 				}	else {
-					print $name." not found<br>";
+					#print $name." not found<br>";
 				}
 					
 			}			
@@ -294,24 +283,64 @@ global $dvrdb, $tvdb;
 }
 /* ===================================================================================== */ 
 function search_show($show_name) {
+global $tvmaze;
 	$info=get_show_info($show_name);
 	var_dump($info);
 }
 /* ===================================================================================== */ 
 function get_show_info($show_name) {
-global $tvdb;
+global $tvdb, $tvmaze;
 	$show_name=clean_text($show_name);
 	$shows = $tvdb->getSeries($show_name);			
+	$category="";
+	
 	if ($show=$shows[0]) {	
-				$category="";
-				#var_dump($show);
-				foreach ($show->genres as $genre) { $category.=$genre.","; }
-				$category=preg_replace("#,$#","",$category);									
-				$info['tvdb_id']=$show->id;
-				$info['category']=$category;
-				$info['description']=$show->overview;
-				return ($info);
+				if ($show->overview) {
+					foreach ($show->genres as $genre) { $category.=$genre.","; }
+					$category=preg_replace("#,$#","",$category);									
+					$info['tvdb_id']=$show->id;
+					$info['name']=$show->name;
+					$info['category']=$category;
+					$info['description']=$show->overview;
+					$info['poster']=get_tvdb_poster($show->id);
+				}
 	}
+
+	if (! $info['name']) {
+		$shows=$tvmaze->TVMaze->singleSearch($show_name);
+		if ($show=$shows[0]) {
+			foreach ($show->genres as $genre) { $category.=$genre.","; }
+			$category=preg_replace("#,$#","",$category);
+			$info['name']=$show->name;
+			$info['tvdb_id']=$show->externalIDs['thetvdb'];
+			$info['category']=$category;
+			$info['description']=$show->summary;
+			$info['poster']=$show->mediumImage;
+		}		
+	}
+	#print_r($info);
+	if ($info['name'] && $info['description']) {
+		if (strip_text($info['name']) == strip_text($show_name) || strip_text(swapands($info['name'])) == strip_text($show_name)) {
+			return($info);
+		} else {
+			echo $info['name']." != ".$show_name."<br><br>";
+		}
+	} else {
+		echo "$show_name not found or no description<br>";
+	}
+}
+function get_tvdb_poster($tvdb_id) {
+	global $apiKey;
+	$url="http://thetvdb.com/api/".$apiKey."/series/".$tvdb_id."/banners.xml";
+    $xml=download_xml($url);
+    $list=new SimpleXMLElement($xml);
+	#var_dump($list->Banner[2]);
+	
+ foreach ($list->Banner as $bannerlist) {
+	 if ($bannerlist->BannerType== "poster") {
+		return ("https://thetvdb.com/banners/".$bannerlist->BannerPath);
+	}
+ }
 }
 /* ===================================================================================== */ 
 function search_episode ($showname, $season_number, $episode_number) {
@@ -331,6 +360,7 @@ global $dvrdb;
 /* ===================================================================================== */ 
 function get_episode_description($showid="", $season_number="", $episode_number="") {
 global $dvrdb,$tvdb;	
+		return;
 		$showid=clean_text($showid);
 		$season_number=clean_number($season_number);
 		$episode_number=clean_number($episode_number);		
@@ -358,15 +388,9 @@ global $dvrdb,$tvdb;
 				}
 		}
 }
-/*----------------------------------------------------------------------------------------------------*/	
-function update_feeds() {
-	global $config, $dvrdb;
-	$priority=0;
-	$results=mysql_query("select url,priority from feeds order by priority desc", $dvrdb);
-	while ($relitem=mysql_fetch_assoc($results)) {
-		$url=$relitem['url'];
-		$priority=$relitem['priority'];
-		$opts = array(
+
+function download_xml($url) {
+	$opts = array(
 	  	'http'=>array(
 	    'method' => "GET",
 	    'header' => "Accept-Encoding: gzip;q=1, compress;q=1\r\n", //Sets the Accept Encoding Feature.
@@ -376,16 +400,26 @@ function update_feeds() {
 		  )
 		);
 
-		$context = stream_context_create($opts);
-		$new=0;
-		print "$url :";
-		if ($page=file_get_contents($url, false, $context)) {
-			if (in_array("Content-Encoding: gzip", $http_response_header)) {
-				if ($gpage=&gzinflate(substr($page, 10, -8))) {
-					$page=$gpage;	
-				}
+	$context = stream_context_create($opts);
+	if ($page=file_get_contents($url, false, $context)) {
+		if (in_array("Content-Encoding: gzip", $http_response_header)) {
+			if ($gpage=&gzinflate(substr($page, 10, -8))) {
+				$page=$gpage;	
 			}
-			
+		}
+	}
+	return($page);
+}
+/*----------------------------------------------------------------------------------------------------*/	
+function update_feeds() {
+	global $config, $dvrdb;
+	$priority=0;
+	$results=mysql_query("select url,priority from feeds order by priority desc", $dvrdb);
+	while ($relitem=mysql_fetch_assoc($results)) {
+		$url=$relitem['url'];
+		$priority=$relitem['priority'];
+		print "$url :";
+		if ($page=download_xml($url)) {
 			$feed= new SimpleXMLElement($page);
 			foreach ($feed->channel[0]->item as $item) {
 				$title=$item->title;
@@ -451,7 +485,7 @@ $title=addslashes($title);
 		foreach ($episode_list as $episode_number) {
 					if ($episodeid= get_episode_id($showid, $season_number, $episode_number, $stamp)) {
 							$result=mysql_query("SELECT * FROM releases WHERE `episodeid`=$episodeid and `priority` <= $priority and `quality`='$quality' and `original_name` = '$title';", $dvrdb);			
-							print mysql_error($dvrdb);
+							#print mysql_error($dvrdb);
 							if (mysql_num_rows($result)==0) {								
 								if (! mysql_query("INSERT INTO releases (episodeid, quality, url, timestamp, priority, original_name ) VALUES ('$episodeid', '$quality', '$url', '$stamp', '$priority', '$title');", $dvrdb)) {
 									print mysql_error($dvrdb);			
@@ -539,7 +573,7 @@ global $dvrdb, $config;
 	
 	if ($showid) {
 		
-	$q="SELECT shows.name, shows.showid, shows.description, shows.category, shows.ignore, favourites.favouriteid, favourites.season as fseason, favourites.episode as fepisode, episodes.season, episodes.episode_number, episodes.timestamp, episodes.episodeid, episodes.episode_name, episodes.downloaded as edownloaded FROM `episodes` 
+	$q="SELECT shows.name, shows.tvdb_id, shows.showid, shows.description, shows.category, shows.poster, shows.ignore, favourites.favouriteid, favourites.season as fseason, favourites.episode as fepisode, episodes.season, episodes.episode_number, episodes.timestamp, episodes.episodeid, episodes.episode_name, episodes.downloaded as edownloaded FROM `episodes` 
 		LEFT JOIN shows ON shows.showid = episodes.showid
 		LEFT JOIN `favourites` on favourites.showid = episodes.showid
 		WHERE episodes.showid = '".$showid."'
@@ -569,7 +603,12 @@ global $dvrdb, $config;
 	while ($relitem=mysql_fetch_assoc($res)) {
 		if ($_GET['showid'] && $first==0) {
 			$first=1;
-			print "<tr><td colspan='3'></td><td colspan='5'>".$relitem['description']."</td></tr>";
+			if ($relitem['poster']) {
+				$poster=stripslashes($relitem['poster']);
+			} else {
+				$poster="null.png";
+			}
+			echo "<tr><td colspan='3' rowspan='100'><img src='$poster' width='100%'/></td><td colspan='8'>".$relitem['description']."</td></tr>";
 		}
 		$epi_num=str_pad($relitem['episode_number'], 2, "0", STR_PAD_LEFT);
 		$season=str_pad($relitem['season'], 2, "0", STR_PAD_LEFT);
@@ -707,7 +746,7 @@ while ($res=mysql_fetch_assoc($results)) {
 	$alt=abs($alt-1);
 	echo "<tr>";
 	
-	echo "<td>".$res['name']."</td>";
+	echo "<td><a href='?showid=".$res['showid']."'>".$res['name']."</a></td>";
 	echo "<td>".$res['season']."</td>";	
 	echo "<td>".$res['episode']."</td>";
 	foreach ($qarray as $q) {
@@ -785,8 +824,21 @@ function clean_number($number) {
 }
 /*---------------------------------------------------------------------------------------------------*/	
 function clean_text($string) {
-		$string=preg_replace("/[^a-z0-9\s\-\_!]/i", "", $string);
+		$string=preg_replace("/[^a-z0-9\s\-\_\.!]/i", "", $string);
 		return ($string);
+}
+function strip_text($string) {
+                $string=strtolower(preg_replace("/[^a-z0-9]/i", "", $string));
+                return ($string);
+}
+function swapands($string) {
+	if (stristr($string, " and ")) {
+		$string=str_replace(" and ", " & ", $string);
+		
+	} elseif (stristr($string, " & ")) {
+		$string=str_replace(" & ", " and ", $string);
+	}
+	return ($string);
 }
 /*---------------------------------------------------------------------------------------------------*/	
 function log_it($code,$entry){

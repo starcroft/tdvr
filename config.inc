@@ -16,6 +16,18 @@ $apiKey = getenv('TVDB_API_KEY');
 
 $tvdb = new Client("http://thetvdb.com", $apiKey);
 
+require 'TVMaze/TVMaze.php';
+require 'TVMaze/TVProduction.php';
+require 'TVMaze/TVShow.php';
+require 'TVMaze/Actor.php';
+require 'TVMaze/Character.php';
+require 'TVMaze/Crew.php';
+require 'TVMaze/Episode.php';
+require 'TVMaze/AKA.php';
+require 'TVMaze/Client.php';
+
+$tvmaze = new JPinkney\TVMaze\Client;
+
 $dvrdb= mysql_connect(getenv('MARIADB_SERVICE_HOST'), getenv('MYSQL_DB_USERNAME') ,getenv('MYSQL_DB_PASSWORD'))
  or exit('Could not connect: ' . mysql_error()); 
 $db = mysql_select_db(getenv('MYSQL_DB_NAME'), $dvrdb);

@@ -32,12 +32,6 @@ $dvrdb= mysql_connect(getenv('MARIADB_SERVICE_HOST'), getenv('MYSQL_DB_USERNAME'
  or exit('Could not connect: ' . mysql_error()); 
 $db = mysql_select_db(getenv('MYSQL_DB_NAME'), $dvrdb);
 
-$urls=array(
-"https://www.torrenting.com/get_rss.php?feed=direct",
-"https://www.scenetime.com/get_rss.php?feed=direct",
-);
-
-
 $video_list=array("x264", "h264", "xvid", "divx", "avc", "vc1");
 $audio_list=array("ac3", "dd5", "dts", "aac", "flac");
 $quality_list=array("bluray", "brrip", "bdrip", "avchd", "webdl", "webrip", "hdtv", "hdrip", "br-rip", "bd-rip", "blu-ray");

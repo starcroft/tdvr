@@ -415,10 +415,14 @@ function update_feeds() {
 	global $config, $dvrdb;
 	$priority=0;
 	$results=mysql_query("select url,priority from feeds order by priority desc", $dvrdb);
+	if (mysql_num_rows($results) == 0) {
+		echo "<h1>ERROR No Feeds Defined</h1><br>";
+		exit;
+	}
 	while ($relitem=mysql_fetch_assoc($results)) {
 		$url=$relitem['url'];
 		$priority=$relitem['priority'];
-		print "$url :";
+		#print "$url :";
 		if ($page=download_xml($url)) {
 			$feed= new SimpleXMLElement($page);
 			foreach ($feed->channel[0]->item as $item) {

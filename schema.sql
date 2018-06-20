@@ -32,7 +32,7 @@ CREATE TABLE `episodes` (
   `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`episodeid`),
   KEY `showid` (`showid`,`timestamp`)
-) ENGINE=MyISAM AUTO_INCREMENT=129811 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=164056 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -52,7 +52,24 @@ CREATE TABLE `favourites` (
   `quality` varchar(128) NOT NULL,
   PRIMARY KEY (`favouriteid`),
   KEY `showid` (`showid`)
-) ENGINE=MyISAM AUTO_INCREMENT=288 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=323 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `feeds`
+--
+
+DROP TABLE IF EXISTS `feeds`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `feeds` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `url` varchar(256) NOT NULL,
+  `priority` smallint(6) NOT NULL,
+  `ratio` varchar(8) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `rank` (`priority`)
+) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -69,33 +86,7 @@ CREATE TABLE `log` (
   `error` tinyint(4) NOT NULL,
   PRIMARY KEY (`logid`),
   KEY `error` (`error`)
-) ENGINE=MyISAM AUTO_INCREMENT=3271 DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `movies`
---
-
-DROP TABLE IF EXISTS `movies`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `movies` (
-  `movieid` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(256) NOT NULL,
-  `description` varchar(4096) NOT NULL,
-  `year` smallint(6) NOT NULL,
-  `category` varchar(64) NOT NULL,
-  `moviedb_id` int(11) NOT NULL,
-  `ignore` tinyint(1) NOT NULL,
-  `updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `posterurl` varchar(256) NOT NULL,
-  `language` varchar(16) DEFAULT NULL,
-  `imdbtitle` varchar(16) DEFAULT NULL,
-  PRIMARY KEY (`movieid`),
-  UNIQUE KEY `showlist` (`movieid`,`ignore`),
-  KEY `year_updated` (`year`,`updated`),
-  KEY `year` (`year`)
-) ENGINE=MyISAM AUTO_INCREMENT=6450 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=3314 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -122,7 +113,7 @@ CREATE TABLE `releases` (
   PRIMARY KEY (`releaseid`),
   KEY `episodeid` (`episodeid`,`quality`,`timestamp`),
   KEY `movieid` (`movieid`) USING BTREE
-) ENGINE=MyISAM AUTO_INCREMENT=471707 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=645425 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -139,10 +130,11 @@ CREATE TABLE `shows` (
   `category` varchar(64) NOT NULL,
   `tvdb_id` int(11) NOT NULL,
   `ignore` tinyint(1) NOT NULL,
+  `poster` varchar(256) DEFAULT NULL,
   `updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`showid`),
   UNIQUE KEY `showlist` (`showid`,`ignore`)
-) ENGINE=MyISAM AUTO_INCREMENT=13936 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=15513 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -154,4 +146,4 @@ CREATE TABLE `shows` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2017-10-27  6:13:50
+-- Dump completed on 2018-06-20  9:53:18

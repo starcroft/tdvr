@@ -16,9 +16,9 @@ function ignoreShow(showid) {
 			   document.getElementById(idname).src="ignore_grey.png";
 			}
 		}
-	}	
+	}
 	xmlhttp.open("GET","?action=ignoreshow&showid="+showid,true);
-	xmlhttp.send();	
+	xmlhttp.send();
 }
 
 function downloadRelease(releaseid) {
@@ -33,12 +33,12 @@ function downloadRelease(releaseid) {
 				idname="download_icon_" + releaseid;
 			   document.getElementById(idname).src="download_done.png";
 		}
-	}	
+	}
 	xmlhttp.open("GET","?action=downloadrelease&releaseid="+releaseid,true);
-	xmlhttp.send();	
+	xmlhttp.send();
 }
 
-function addFavourite(showid, quality) {
+function addFavourite(showid, quality, resolution, video) {
 	if (window.XMLHttpRequest) {
 		xmlhttp=new XMLHttpRequest();
 	} else {
@@ -52,9 +52,9 @@ function addFavourite(showid, quality) {
 			document.getElementById(idname).src="favourite.png";
 			}
 		}
-	}	
-	xmlhttp.open("GET","?action=addfavourite&showid="+showid+"&quality="+quality,true);
-	xmlhttp.send();	
+	}
+	xmlhttp.open("GET","?action=addfavourite&showid="+showid+"&quality="+quality+"&resolution="+resolution+"&video="+video,true);
+	xmlhttp.send();
 }
 function toggleFavourite(favid, quality) {
   if (document.getElementById(favid + "-" + quality).checked) {

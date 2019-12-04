@@ -870,57 +870,93 @@ print_html_footer();
 }
 /*---------------------------------------------------------------------------------------------------*/
 function process_favourites() {
-global $dvrdb, $config;
+	global $dvrdb, $config;
 
-$q="SELECT shows.name, shows.showid, episodes.episodeid, episodes.season as e_season, episodes.episode_number as e_episode, releases.url, releases.quality as rquality, releases.priority, releases.releaseid, favourites.favouriteid, favourites.quality, favourites.location, favourites.ratio
-FROM `favourites`
-LEFT JOIN `shows` on shows.showid=favourites.showid
-LEFT JOIN `episodes` on episodes.showid = shows.showid
-LEFT JOIN `releases` on releases.episodeid= episodes.episodeid
-WHERE ((episodes.episode_number > favourites.episode and episodes.season = favourites.season) or (episodes.season > favourites.season) or (favourites.season =0))
-and releases.url is not null
-and shows.ignore ='0'
-ORDER BY shows.name, episodes.season ASC , episodes.episode_number ASC , releases.priority DESC
-";
-$oldshow="";
-$oldepi="";
-$oldseas="";
+	$q="SELECT shows.name, shows.showid, episodes.episodeid, episodes.season as e_season, episodes.episode_number as e_episode, releases.score as score, releases.url, releases.video as rvideo, releases.resolution as rresolution, releases.quality as rquality, releases.priority, releases.releaseid, favourites.favouriteid, favourites.quality, favourites.location, favourites.ratio
+	FROM `favourites`
+	LEFT JOIN `shows` on shows.showid=favourites.showid
+	LEFT JOIN `episodes` on episodes.showid = shows.showid
+	LEFT JOIN `releases` on releases.episodeid= episodes.episodeid
+	WHERE ((episodes.episode_number > favourites.episode and episodes.season = favourites.season) or (episodes.season > favourites.season) or (favourites.season =0))
+	and releases.url is not null
+	and shows.ignore ='0'
+	and episodes.downloaded = '0'
+	ORDER BY shows.name, episodes.season ASC , episodes.episode_number ASC , releases.score DESC, releases.priority DESC
+	";
+	$oldshow="";
+	$oldepi="";
+	$oldseas="";
+	$got=0;
+	$match=0;
 
-if ($results=mysql_query($q, $dvrdb)) {
-	while ($rel=mysql_fetch_assoc($results)){
-		$showid=$rel['showid'];
-		$epi=$rel['e_episode'];
-		$seas=$rel['e_season'];
-		if ($showid != $oldshow || $oldepi != $epi || $oldseas != $seas) {
-			$got=0;
-		}
-
-		if ($got == 0 && (stristr($rel['quality'], $rel['rquality']) || $rel['quality'] == "")) {
-			print $rel['name']." : ".$seas."/".$epi." ".$rel['rquality']."<br>";
-			if ($rel['location']) {
-				$save_dir=$rel['location'];
-			}	else {
-				$save_dir=$config['save_dir'];
+	if ($results=mysql_query($q, $dvrdb)) {
+		while ($rel=mysql_fetch_assoc($results)){
+			$showid=$rel['showid'];
+			$epi=$rel['e_episode'];
+			$seas=$rel['e_season'];
+			if ($showid != $oldshow || $oldepi != $epi || $oldseas != $seas) {
+				$got=0;
+				$match=0;
+				$rmatched=0;
+				$rmatch=0;
+				$vmatched=0;
+				$vmatch=0;
+				$qmatch=0;
+				$qmatched=0;
 			}
+			print $rel['name']." : ".$seas."/".$epi." ".$rel['rquality']." ".$rel['rvideo']." ".$rel['rresolution']." :: ".$rel['quality']." :: " ;
+			if ($got == 0) {
+						$qbits=explode(" ", $rel['quality']);
+						foreach ($qbits as $bit) {
+							print "-$bit-";
+								if (in_array($bit, $config['resolutions'])) {
+									$rmatch=1;
+									if ($bit == $rel['rresolution']) {
+										$rmatched=1;
+									}
+								}
+								if (in_array($bit, $config['video_map'])) {
+									$vmatch=1;
+									if ($bit == $rel['rvideo']) {
+										$vmatched=1;
+									}
+								}
 
-			print $rel['url']." : ".$rel['releaseid']." : ".$save_dir."<br>";
-			$err=add_torrent($rel['url'], $save_dir);
-			if ($err['error']) {
-				print $err['error']['message'];
-				log_it(1, $err['error']['message']);
-			} else {
-				$got=1;
-				mysql_query("UPDATE `favourites` SET season='$seas', episode='$epi' WHERE favouriteid='".$rel['favouriteid']."';", $dvrdb) or print mysql_error();
-				mysql_query("UPDATE `releases` SET downloaded='1' WHERE releaseid='".$rel['releaseid']."';") or print mysql_error();
-				mysql_query("UPDATE `episodes` SET downloaded='1' WHERE episodeid='".$rel['episodeid']."';") or print mysql_error();
-				log_it(2, "Downloaded ".$rel['name']." S".$seas."E".$epi." ".$rel['rquality']);
+								if (in_array($bit, $config['quality'])) {
+									$qmatch=1;
+									if ($bit == $rel['rquality']) {
+										$qmatched=1;
+									}
+								}
+				}
+				# This will be 0 if all the matches are matched, or if no matches set :D
+				$allmatch=($qmatch - $qmatched) + ($vmatch - $vmatched) + ($rmatch - $rmatched);
+				print "$rmatch $rmatched $vmatch $vmatched $qmatch $qmatched $allmatch<br>";
+				if ($allmatch == 0 ) {
+					if ($rel['location']) {
+						$save_dir=$rel['location'];
+					}	else {
+						$save_dir=$config['save_dir'];
+					}
+
+					#print $rel['url']." : ".$rel['releaseid']." : ".$save_dir."<br>";
+					$err=add_torrent($rel['url'], $save_dir);
+					print "<br>";
+					if ($err['error']) {
+						print $err['error']['message'];
+					} else {
+						$got=1;
+						mysql_query("UPDATE `favourites` SET season='$seas', episode='$epi' WHERE favouriteid='".$rel['favouriteid']."';", $dvrdb) or print mysql_error();
+						mysql_query("UPDATE `releases` SET downloaded='1' WHERE releaseid='".$rel['releaseid']."';") or print mysql_error();
+						mysql_query("UPDATE `episodes` SET downloaded='1' WHERE episodeid='".$rel['episodeid']."';") or print mysql_error();
+					}
+				}
 			}
+			$oldepi=$epi;
+			$oldseas=$seas;
+			$oldshow=$showid;
 		}
-		$oldepi=$epi;
-		$oldseas=$seas;
-		$oldshow=$showid;
 	}
-}
 }
 /*---------------------------------------------------------------------------------------------------*/
 function clean_number($number) {

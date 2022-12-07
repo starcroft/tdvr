@@ -32,8 +32,8 @@ text-align:center;
 width: 250px;
 }
 .showlist_name_long {
-width: 50%;
-min-width: 50%;
+width: 30%;
+min-width: 30%;
 }
 .showlist_season {
 text-align: center;
@@ -44,7 +44,7 @@ text-align: center;
 width: 60px;
 }
 .showlist_episode {
-width: 15%;
+width: 25%;
 }
 .showlist_category {
 width: 25%;

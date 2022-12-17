@@ -1,16 +1,16 @@
 <?php
 ini_set('error_reporting', E_ERROR);
-error_reporting(E_ERROR | E_WARNING | E_PARSE);
+error_reporting(E_ERROR | E_PARSE);
 
 $config=array("api_url"=>getenv('BACKEND_URL'), "api_user"=>getenv('BACKEND_USERNAME'), "api_password"=>getenv('BACKEND_PASSWORD'));
 
 require_once "../TVMaze-PHP-API-Wrapper/TVMazeIncludes.php";
-
 $tvmaze = new JPinkney\TVMaze\Client;
-
-$dvrdb= mysql_connect(getenv('MARIADB_SERVICE_HOST'), getenv('MYSQL_DB_USERNAME') ,getenv('MYSQL_DB_PASSWORD'))
+$dvrdb = new mysqli(getenv('MARIADB_SERVICE_HOST'), getenv('MYSQL_DB_USERNAME') ,getenv('MYSQL_DB_PASSWORD'), getenv('MYSQL_DB_NAME'))
  or exit('Could not connect: ' . mysql_error());
-$db = mysql_select_db(getenv('MYSQL_DB_NAME'), $dvrdb);
+
+#$dvrdb= mysql_connect(getenv('MARIADB_SERVICE_HOST'), getenv('MYSQL_DB_USERNAME') ,getenv('MYSQL_DB_PASSWORD'))
+#$db = mysql_select_db(getenv('MYSQL_DB_NAME'), $dvrdb);
 
 $video_list=array("x264", "h264", "xvid", "divx", "avc", "vc1", "hevc", 'x265');
 

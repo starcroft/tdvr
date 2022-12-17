@@ -14,11 +14,16 @@ if (PHP_SAPI === 'cli') {
 require "config.inc";
 require "transmission.torrent.inc";
 
-if ($_GET['update']==1) {
+if (isset($_GET['update]']) && $_GET['update']==1) {
 	update_feeds($urls);
 }
 
-switch ($_GET['action']) {
+if (isset($_GET['action'])) {
+	$action=$_GET['action'];
+} else {
+	$action="";
+}
+switch ($action) {
 
 	case "rss":
 		build_feed();
@@ -115,7 +120,7 @@ AND releases.timestamp < date_sub(now(), interval 90 day);",
 "delete `releases` FROM `releases` where timestamp < date_sub(now(), INTERVAL 365 day)",
 );
 foreach ($sqlarray as $sql) {
-	mysql_query($sql,$dvrdb);
+	mysqli_query($dvrdb, $sql);
 }
 }
 
@@ -124,12 +129,12 @@ function show_release_info($releaseid) {
 global $dvrdb;
 	$releaseid=clean_number($releaseid);
 	$q="SELECT url FROM `releases` WHERE releaseid='$releaseid';";
-	if ($result=mysql_query($q, $dvrdb)) {
-		if ($res=mysql_fetch_assoc($result)) {
+	if ($result=mysqli_query($dvrdb, $q)) {
+		if ($res=mysqli_fetch_assoc($result)) {
 			get_torrent_info($res['url']);
 		}
 	} else {
-		print mysql_error();
+		print mysqli_error();
 	}
 }
 /* ===================================================================================== */
@@ -137,10 +142,10 @@ function ignore_show($showid) {
 	global $dvrdb;
 	$showid=clean_number($showid);
 	$q="UPDATE `shows` SET `ignore`=IF(`ignore`=1, 0, 1) WHERE `showid`='$showid';";
-	if ($res=mysql_query($q, $dvrdb)) {
+	if ($res=mysqli_query($dvrdb, $q)) {
 	$q="SELECT `ignore` from `shows` WHERE `showid`='$showid';";
-	$res=mysql_query($q, $dvrdb);
-	$result=mysql_fetch_assoc($res);
+	$res=mysqli_query($dvrdb,$q);
+	$result=mysqli_fetch_assoc($res);
 	if ($result['ignore']==1) {
 			echo "ignore";
 		} else {
@@ -156,11 +161,11 @@ global $dvrdb;
 	$resolution=clean_text($resolution);
 	$video=clean_text($video);
 
-   if ($result=mysql_query("SELECT favouriteid FROM favourites WHERE showid = '$showid';", $dvrdb)) {
-   	if ($res=mysql_fetch_assoc($result)) {
-			mysql_query("UPDATE `favourites`  SET `quality` = '$quality' WHERE `showid` = '$showid';");
+   if ($result=mysqli_query($dvrdb, "SELECT favouriteid FROM favourites WHERE showid = '$showid';")) {
+   	if ($res=mysqli_fetch_assoc($result)) {
+			mysqli_query($dvrdb, "UPDATE `favourites`  SET `quality` = '$quality' WHERE `showid` = '$showid';");
    	} else {
-			if (mysql_query("INSERT INTO `favourites` (`showid`, `quality`) VALUES ('$showid', '$quality');")) {
+			if (mysqli_query($dvrdb, "INSERT INTO `favourites` (`showid`, `quality`) VALUES ('$showid', '$quality');")) {
 				print "OK";
 			}
    	}
@@ -175,8 +180,8 @@ global $dvrdb;
 	$video=clean_text($video);
 	$set=clean_number($set);
 	if($favourite) {
-		$result=mysql_query("select quality from favourites where favouriteid='$favourite';", $dvrdb);
-		   	if ($res=mysql_fetch_assoc($result)) {
+		$result=mysqli_query($dvrdb, "select quality from favourites where favouriteid='$favourite';");
+		   	if ($res=mysqli_fetch_assoc($result)) {
 				$qlist=$res['quality'];
 				$qlist=str_replace($quality, "", $qlist);
 				$qlist=rtrim(ltrim($qlist));
@@ -185,7 +190,7 @@ global $dvrdb;
 				}
 				$qlist=preg_replace("/\s+/"," ",$qlist);
 				echo $qlist;
-				$result=mysql_query("update `favourites` set `quality`='$qlist' where `favouriteid`='$favourite';",$dvrdb);
+				$result=mysqli_query($dvrdb, "update `favourites` set `quality`='$qlist' where `favouriteid`='$favourite';");
 			} else {
 				echo "cannot read favourite";
 			}
@@ -209,11 +214,11 @@ global $dvrdb;
 		WHERE `ignore`='0'
 		ORDER BY shows.updated desc";
 	}
-	$results=mysql_query($q, $dvrdb);
+	$results=mysqli_query($dvrdb, $q);
 	echo "<table class='table table-condensed table-striped table-responsive'>";
 	echo "<tbody>";
-	if (mysql_num_rows($results)>0) {
-		while ($res=mysql_fetch_assoc($results)) {
+	if (mysqli_num_rows($results)>0) {
+		while ($res=mysqli_fetch_assoc($results)) {
 			$showid=$res['showid'];
 			echo "<tr>";
 			if ($res['favouriteid']) {
@@ -262,14 +267,14 @@ global $dvrdb;
 			LIMIT 100
 			;";
 
-		$results=mysql_query($q, $dvrdb);
+		$results=mysqli_query($dvrdb, $q);
 
-		if (mysql_num_rows($results)>0) {
-			while ($res=mysql_fetch_assoc($results)) {
+		if (mysqli_num_rows($results)>0) {
+			while ($res=mysqli_fetch_assoc($results)) {
 					$id=$res['episodeid'];
 					$overview=addslashes(get_episode_description($res['showid'], $res['season'], $res['episode_number']));
 					#print $overview."<BR>";
-					mysql_query("UPDATE `episodes` SET `episode_name`='$overview' where episodeid='$id';", $dvrdb);
+					mysqli_query($dvrdb, "UPDATE `episodes` SET `episode_name`='$overview' where episodeid='$id';");
 				}
 		}
 }
@@ -278,12 +283,12 @@ function update_show_desc($show_name="") {
 global $dvrdb, $tvdb;
 	$show_name=clean_text($show_name);
 	if ($show_name) {
-		$results=mysql_query("SELECT * from `shows` where (`description`='' or `poster` = '' or `poster` is null or `tvmaze_id` is null) and shows.ignore= '0' and `name` like '$show_name';", $dvrdb);
+		$results=mysqli_query($dvrdb, "SELECT * from `shows` where (`description`='' or `poster` = '' or `poster` is null or `tvmaze_id` is null) and shows.ignore= '0' and `name` like '$show_name';");
 	} else {
-		$results=mysql_query("SELECT * from `shows` where (`description`='' or `tvmaze_id` is null) and shows.ignore = '0' and shows.updated > date_sub(now(), INTERVAL 28 day) order by updated DESC limit 100;", $dvrdb);
+		$results=mysqli_query($dvrdb, "SELECT * from `shows` where (`description`='' or `tvmaze_id` is null or `poster` is null or `poster` = '') and shows.ignore = '0' and shows.updated > date_sub(now(), INTERVAL 28 day) order by updated DESC limit 100;");
 	}
-	if (mysql_num_rows($results)>0) {
-			while ($res=mysql_fetch_assoc($results)) {
+	if (mysqli_num_rows($results)>0) {
+			while ($res=mysqli_fetch_assoc($results)) {
 				$name=$res['name'];
 				$id=$res['showid'];
 				echo $name." ".$id."<br>";
@@ -292,7 +297,11 @@ global $dvrdb, $tvdb;
 					print $name."<br>";
 					print_r($show);
 					print "<hr>";
-					mysql_query("UPDATE `shows` SET `tvdb_id`='".$show['tvdb_id']."', `tvmaze_id`='".$show['tvmaze_id']."', `description`='".addslashes($show['description'])."', `category`='".addslashes($show['category'])."', `poster`='".addslashes($show['poster'])."' where showid='$id';", $dvrdb);
+					#if ($show['tvdb_id'] == '') {
+					#	$show['tvdb_id'] = "NULL";
+					#}
+					# `tvdb_id`='".$show['tvdb_id']."',
+					mysqli_query($dvrdb, "UPDATE `shows` SET  `tvmaze_id`='".$show['tvmaze_id']."', `description`='".addslashes($show['description'])."', `category`='".addslashes($show['category'])."', `poster`='".addslashes($show['poster'])."' where showid='$id';");
 				}	else {
 					print $name." not found<br>";
 				}
@@ -312,7 +321,7 @@ global $tvdb, $tvmaze;
 	$show_name=clean_text($show_name);
 	#$shows = $tvdb->getSeries($show_name);
 	$category="";
-
+	#print_r($shows);
 	if (preg_match("/[0-9]{4}$/", $show_name, $match)) {
 		$year=$match[0];
 		$name_no_year=str_replace($year, "", $show_name);
@@ -372,8 +381,8 @@ global $dvrdb;
 		$showname=clean_text($showname);
 		$season_number=clean_number($season_number);
 		$episode_number=clean_number($episode_number);
-		$result=mysql_query("select shows.showid, episodes.episode_name from shows left join episodes on episodes.showid = shows.showid where shows.name like '$showname' and episodes.episode_number=$episode_number and episodes.season=$season_number;", $dvrdb);
-		if ($res=mysql_fetch_assoc($result) && $res['episode_name']){
+		$result=mysqli_query($dvrdb, "select shows.showid, episodes.episode_name from shows left join episodes on episodes.showid = shows.showid where shows.name like '$showname' and episodes.episode_number=$episode_number and episodes.season=$season_number;");
+		if ($res=mysqli_fetch_assoc($result) && $res['episode_name']){
 			#print "gotfrom db";
 			print $res['episode_name'];
 		} else {
@@ -388,11 +397,11 @@ global $dvrdb,$tvdb;
 		$season_number=clean_number($season_number);
 		$episode_number=clean_number($episode_number);
 		if (is_numeric($showid)) {
-				$tvdb_lookup=mysql_query("SELECT tvmaze_id from shows where showid='$showid';", $dvrdb);
+				$tvdb_lookup=mysqli_query($dvrdb, "SELECT tvmaze_id from shows where showid='$showid';");
 		} else {
-				$tvdb_lookup=mysql_query("SELECT tvmaze_id from shows where name like '$showid';", $dvrdb);
+				$tvdb_lookup=mysqli_query($dvrdb, "SELECT tvmaze_id from shows where name like '$showid';");
 		}
-		if ($res=mysql_fetch_assoc($tvdb_lookup)){
+		if ($res=mysqli_fetch_assoc($tvdb_lookup)){
 				$tvdb_id=$res['tvmaze_id'];
 				$season_number=intval($season_number);
 				$episode_number=intval($episode_number);
@@ -441,11 +450,11 @@ function update_feeds() {
 	global $config, $dvrdb;
 	$priority=0;
 
-	if (! $results=mysql_query("select url,priority from feeds order by priority desc", $dvrdb)) {
+	if (! $results=mysqli_query($dvrdb, "select url,priority from feeds order by priority desc")) {
 		echo "<h1>ERROR No Feeds Defined</h1><br>";
 		exit;
 	}
-	while ($relitem=mysql_fetch_assoc($results)) {
+	while ($relitem=mysqli_fetch_assoc($results)) {
 		$url=$relitem['url'];
 		$priority=$relitem['priority'];
 		#print "$url :";
@@ -454,7 +463,7 @@ function update_feeds() {
 			//
 			$page=preg_replace("/ & /", "", $page);
 
-			try { 
+			try {
 
 				$feed= new SimpleXMLElement($page);
 				foreach ($feed->channel[0]->item as $item) {
@@ -516,8 +525,8 @@ function update_feeds() {
 					}
 				}
 
-			} catch (Exception $e) { 
-				echo "Error parsing XML $e <br/><hr/>"; 
+			} catch (Exception $e) {
+				echo "Error parsing XML $e <br/><hr/>";
 				print $page."<hr/>";
 			}
 
@@ -530,8 +539,8 @@ function update_feeds() {
 /*----------------------------------------------------------------------------------------------------*/
 function update_release_tags() {
 	global $dvrdb, $config;
-  $result=mysql_query("SELECT * FROM releases WHERE (`quality` = '' or `video` = '' or `resolution` = '' or `score` is null) and `timestamp` > date_sub(NOW(), interval 90 day);", $dvrdb);
-	while ($release=mysql_fetch_assoc($result)) {
+  $result=mysqli_query($dvrdb, "SELECT * FROM releases WHERE (`quality` = '' or `video` = '' or `resolution` = '' or `score` is null) and `timestamp` > date_sub(NOW(), interval 90 day);");
+	while ($release=mysqli_fetch_assoc($result)) {
 		$quality="unknown";
 		$vcodec="unknown";
 		$resolution='480p';
@@ -567,8 +576,8 @@ function update_release_tags() {
 		if ($vcodec == 'unknown') {
 			print $release['original_name']." ".$vcodec."<br>";
 		}
-		if (! mysql_query("UPDATE releases SET `quality` = '$quality', `video` = '$vcodec', `resolution` = '$resolution', `score` = '$totalscore' WHERE `releaseid` = '".$release['releaseid']."';", $dvrdb)) {
-			print mysql_error($dvrdb);
+		if (! mysqli_query($dvrdb, "UPDATE releases SET `quality` = '$quality', `video` = '$vcodec', `resolution` = '$resolution', `score` = '$totalscore' WHERE `releaseid` = '".$release['releaseid']."';")) {
+			print mysqli_error($dvrdb);
 		}
 	}
 }
@@ -584,11 +593,11 @@ $title=addslashes($title);
 		$episode_list=explode(",",$episode_number);
 		foreach ($episode_list as $episode_number) {
 					if ($episodeid= get_episode_id($showid, $season_number, $episode_number, $stamp)) {
-						$result=mysql_query("SELECT * FROM releases WHERE `episodeid`=$episodeid and `url` = '$url' and `original_name` = '$title';", $dvrdb);
-						if (mysql_num_rows($result)==0) {
+						$result=mysqli_query($dvrdb, "SELECT * FROM releases WHERE `episodeid`=$episodeid and `url` = '$url' and `original_name` = '$title';");
+						if (mysqli_num_rows($result)==0) {
 							echo "$title : $season : $episode : $quality : $vcodec : $resolution<br>";
-							if (! mysql_query("INSERT INTO releases (episodeid, quality, url, timestamp, priority, original_name, video, resolution ) VALUES ('$episodeid', '$quality', '$url', '$stamp', '$priority', '$title', '$vcodec', '$resolution');", $dvrdb)) {
-									print mysql_error($dvrdb);
+							if (! mysqli_query($dvrdb, "INSERT INTO releases (episodeid, quality, url, timestamp, priority, original_name, video, resolution, audio, downloaded, proper ) VALUES ('$episodeid', '$quality', '$url', '$stamp', '$priority', '$title', '$vcodec', '$resolution', '', '0', '0');")) {
+									print mysqli_error($dvrdb);
 							}
 						} else {
 							#echo "Already present 2<br>";
@@ -609,18 +618,18 @@ global $dvrdb;
 	$season_number=clean_number($season_number);
 	$episode_number=clean_number($episode_number);
 	$stamp=clean_number($stamp);
-	$results=mysql_query("SELECT episodeid from episodes where showid='$showid' and season='$season_number' and episode_number='$episode_number';", $dvrdb);
-	if (mysql_num_rows($results)>0) {
-			$id=mysql_fetch_assoc($results);
+	$results=mysqli_query($dvrdb, "SELECT episodeid from episodes where showid='$showid' and season='$season_number' and episode_number='$episode_number';");
+	if (mysqli_num_rows($results)>0) {
+			$id=mysqli_fetch_assoc($results);
 			$rid=$id['episodeid'];
 	} else {
 			$episode_description=addslashes(get_episode_description($showid, $season_number, $episode_number));
-			if (mysql_query("INSERT INTO episodes (showid, season, episode_number, episode_name, timestamp) VALUES ('$showid', '$season_number', '$episode_number','$episode_description', '$stamp');", $dvrdb)) {
-				$id=mysql_insert_id();
-				mysql_query("UPDATE `shows` SET `updated` = '$stamp' WHERE `showid` = '$showid';",$dvrdb);
+			if (mysqli_query($dvrdb, "INSERT INTO episodes (showid, season, episode_number, downloaded, episode_name, timestamp) VALUES ('$showid', '$season_number', '$episode_number','0', '$episode_description', '$stamp');")) {
+				$id=mysqli_insert_id($dvrdb);
+				mysqli_query($dvrdb, "UPDATE `shows` SET `updated` = '$stamp' WHERE `showid` = '$showid';");
 				$rid=$id;
 			} else {
-				print mysql_error($dvrdb);
+				print mysqli_error($dvrdb);
 			}
 	}
 	return ($rid);
@@ -630,9 +639,9 @@ function get_show_id($show_name){
 global $dvrdb;
 	$show_name=clean_text($show_name);
 	$sql_name=addslashes($show_name);
-	$results=mysql_query("SELECT showid from shows where name like '$sql_name';",$dvrdb);
-		if (mysql_num_rows($results)>0) {
-			$id=mysql_fetch_assoc($results);
+	$results=mysqli_query($dvrdb, "SELECT showid from shows where name like '$sql_name';");
+		if (mysqli_num_rows($results)>0) {
+			$id=mysqli_fetch_assoc($results);
 			return($id['showid']);
 		} else {
 			if ($show_info=get_show_info($show_name)) {
@@ -640,11 +649,16 @@ global $dvrdb;
 				$tvmaze_id=$show_info['tvmaze_id'];
 				$show_description=addslashes($show_info['description']);
 				$show_category=addslashes($show_info['category']);
+				if (! is_numeric($tvmaze_id)) {
+					$tvmaze_id=0;
+				}
 			}
-			if (mysql_query("INSERT INTO shows (name,description,category,tvdb_id, tvmaze_id) VALUES ('$sql_name','$show_description', '$show_category', '$tvdb_id', '$tvmaze_id');", $dvrdb)) {
-				return(mysql_insert_id());
-			} else {
-				print mysql_error();
+			if ($tvmaze_id != "") {
+				if (mysqli_query($dvrdb, "INSERT INTO shows (`name`, `description`, `category`, `tvmaze_id`, `ignore`) VALUES ('$sql_name','$show_description', '$show_category', '$tvmaze_id', '0');")) {
+					return(mysqli_insert_id());
+				} else {
+					print mysqli_error();
+				}
 			}
 		}
 }
@@ -653,21 +667,21 @@ function download_release($releaseid, $save_dir="") {
 global $dvrdb, $config;
 	$releaseid=clean_number($releaseid);
 
-	if ($results=mysql_query("SELECT url, episodeid FROM releases WHERE releaseid='$releaseid';", $dvrdb)) {
-		$res=mysql_fetch_assoc($results);
+	if ($results=mysqli_query($dvrdb, "SELECT url, episodeid FROM releases WHERE releaseid='$releaseid';")) {
+		$res=mysqli_fetch_assoc($results);
 		$episodeid=$res['episodeid'];
 		if (! $save_dir) { $save_dir=$config['save_dir']; }
 			$err=add_torrent($res['url'], $save_dir);
 			if (! $err['error']) {
-					mysql_query("UPDATE `releases` SET downloaded='1' WHERE releaseid='$releaseid';") or print mysql_error();
-					mysql_query("UPDATE `episodes` SET downloaded='1' WHERE episodeid='$episodeid';") or print mysql_error();
+					mysqli_query($dvrdb, "UPDATE `releases` SET downloaded='1' WHERE releaseid='$releaseid';") or print mysqli_error();
+					mysqli_query($dvrdb, "UPDATE `episodes` SET downloaded='1' WHERE episodeid='$episodeid';") or print mysqli_error();
 			} else {
 				log_it("3", $err['error']);
 			}
 			#echo "OK";
 			return($err);
 	} else {
-		print mysql_error();
+		print mysqli_error();
 	}
 }
 /*----------------------------------------------------------------------------------------------------*/
@@ -705,8 +719,8 @@ global $dvrdb, $config;
 	}
 	echo "<tbody>";
 	$first=0;
-	$res=mysql_query($q, $dvrdb) or print mysql_error($dvrdb);
-	while ($relitem=mysql_fetch_assoc($res)) {
+	$res=mysqli_query($dvrdb, $q) or print mysqli_error($dvrdb);
+	while ($relitem=mysqli_fetch_assoc($res)) {
 		if ($_GET['showid'] && $first==0) {
 			$first=1;
 			if ($relitem['poster']) {
@@ -743,10 +757,10 @@ global $dvrdb, $config;
 			#echo $fstring;
 			$limit = 'limit 1';
 		}
-		$rel=mysql_query("SELECT * FROM `releases` where episodeid='".$relitem['episodeid']."' $fstring group by resolution,video,quality order by score desc $limit;", $dvrdb);
+		$rel=mysqli_query($dvrdb, "SELECT * FROM `releases` where episodeid='".$relitem['episodeid']."' $fstring group by resolution,video,quality order by score desc $limit;");
 		$done=array();
 		$alldone=0;
-		while ($release=mysql_fetch_assoc($rel)) {
+		while ($release=mysqli_fetch_assoc($rel)) {
 				$showid=$relitem['showid'];
 				$releaseid=$release['releaseid'];
 				$quality=$release['resolution']." ".$release['video'];
@@ -761,7 +775,7 @@ global $dvrdb, $config;
 				} else {
 					$line.="<td class='showlist_icon'><img id='favourite_icon_$showid' src='favourite_grey.png' onclick=\"addFavourite($showid, '$quality');\"></td>";
 				}
-				if ($res['ignore']==1) {
+				if ($relitem['ignore']==1) {
 					$line.="<td class='showlist_icon'><img id='ignore_icon_$showid' src='ignore.png' onclick=\"ignoreShow($showid);\"></td>";
 				} else {
 					$line.= "<td class='showlist_icon'><img id='ignore_icon_$showid' src='ignore_grey.png' onclick=\"ignoreShow($showid);\"></td>";
@@ -815,8 +829,8 @@ global $dvrdb, $config;
 		and episodes.timestamp > date_sub(now(), INTERVAL 30 day)
 		ORDER BY episodes.timestamp desc";
 
-	$res=mysql_query($q, $dvrdb) or print mysql_error($dvrdb);
-	while ($relitem=mysql_fetch_assoc($res)) {
+	$res=mysqli_query($dvrdb,$q) or print mysqli_error($dvrdb);
+	while ($relitem=mysqli_fetch_assoc($res)) {
 		$epi_num=str_pad($relitem['episode_number'], 2, "0", STR_PAD_LEFT);
 		$season=str_pad($relitem['season'], 2, "0", STR_PAD_LEFT);
 		$show=str_replace(" ",".",stripslashes($relitem['name']));
@@ -825,9 +839,9 @@ global $dvrdb, $config;
 		$show_prefix="$show.S".$season."E".$epi_num.".";
 		if ($relitem['episode_name']) {
 				$show_prefix.=str_replace(" ", ".", stripslashes($relitem['episode_name']))."."; }
-		$rel=mysql_query(" SELECT * FROM `releases` where episodeid='".$relitem['episodeid']."' group by quality, priority order by priority asc ;", $dvrdb);
+		$rel=mysqli_query($dvrdb, " SELECT * FROM `releases` where episodeid='".$relitem['episodeid']."' group by quality, priority order by priority asc ;");
 			$done=array();
-			while ($release=mysql_fetch_assoc($rel)) {
+			while ($release=mysqli_fetch_assoc($rel)) {
 				if ($config['hide_hd']==1 && ($release['quality']=="720p" || $release['quality']=='1080p')) {
 
 				} else {
@@ -851,35 +865,35 @@ function list_favourites() {
 global $dvrdb, $config;
 print_html_header();
 
-$qresults=mysql_query("SELECT distinct(`quality`) from `releases` where `quality` not in ('unknown', 'dsr', '') order by `quality`");
-$vresults=mysql_query("SELECT distinct(`video`) from `releases` where `video` not in ('unknown', '') order by `video`");
-$rresults=mysql_query("SELECT distinct(`resolution`) from `releases` where `resolution` not in ('unknown', '') order by `resolution`");
+$qresults=mysqli_query($dvrdb, "SELECT distinct(`quality`) from `releases` where `quality` not in ('unknown', 'dsr', '') order by `quality`");
+$vresults=mysqli_query($dvrdb, "SELECT distinct(`video`) from `releases` where `video` not in ('unknown', '') order by `video`");
+$rresults=mysqli_query($dvrdb, "SELECT distinct(`resolution`) from `releases` where `resolution` not in ('unknown', '') order by `resolution`");
 $headarray=array("Name", "S", "E");
 
-while ($res = mysql_fetch_assoc($qresults)) {
+while ($res = mysqli_fetch_assoc($qresults)) {
 		$qarray[]=$res['quality'];
 }
-while ($res = mysql_fetch_assoc($vresults)) {
+while ($res = mysqli_fetch_assoc($vresults)) {
 		$varray[]=$res['video'];
 }
-while ($res = mysql_fetch_assoc($rresults)) {
+while ($res = mysqli_fetch_assoc($rresults)) {
 		$rarray[]=$res['resolution'];
 }
 $matcharray=array_merge($qarray, $varray, $rarray);
 $headarray=array_merge($headarray, $matcharray);
 
-$results=mysql_query("SELECT shows.name, shows.showid, favourites.season, favourites.episode, favourites.favouriteid, favourites.quality, favourites.location, favourites.ratio
+$results=mysqli_query($dvrdb, "SELECT shows.name, shows.showid, favourites.season, favourites.episode, favourites.favouriteid, favourites.quality, favourites.location, favourites.ratio
 FROM `favourites`
 LEFT JOIN `shows` on shows.showid = favourites.showid
 WHERE shows.name is not null
-ORDER BY shows.updated DESC;") or print mysql_error();
+ORDER BY shows.updated DESC;") or print mysqli_error();
 
 echo "<table class='table table-condensed table-striped'><thead>";
 foreach ($headarray as $head) {
 	echo "<th>$head</th>";
 }
 echo "</thead><tbody>";
-while ($res=mysql_fetch_assoc($results)) {
+while ($res=mysqli_fetch_assoc($results)) {
 	$alt=abs($alt-1);
 	echo "<tr>";
 
@@ -904,15 +918,16 @@ print_html_footer();
 function process_favourites() {
 	global $dvrdb, $config;
 
-	$q="SELECT shows.name, shows.showid, episodes.episodeid, episodes.season as e_season, episodes.episode_number as e_episode, releases.score as score, releases.url, releases.video as rvideo, releases.resolution as rresolution, releases.quality as rquality, releases.priority, releases.releaseid, favourites.favouriteid, favourites.quality, favourites.location, favourites.ratio
+	$q="SELECT shows.name, shows.showid, episodes.episodeid, episodes.season as e_season, episodes.episode_number as e_episode, releases.score as score, releases.url, releases.video as rvideo, releases.resolution as rresolution, releases.quality as rquality, releases.priority, releases.releaseid, releases.timestamp as release_date, favourites.favouriteid, favourites.quality, favourites.location, favourites.ratio
 	FROM `favourites`
 	LEFT JOIN `shows` on shows.showid=favourites.showid
 	LEFT JOIN `episodes` on episodes.showid = shows.showid
 	LEFT JOIN `releases` on releases.episodeid= episodes.episodeid
-	WHERE ((episodes.episode_number > favourites.episode and episodes.season = favourites.season) or (episodes.season > favourites.season) or (favourites.season =0))
+	WHERE ((episodes.episode_number > favourites.episode and episodes.season = favourites.season) or (episodes.season > favourites.season) or (favourites.season =0) or favourites.season is NULL)
 	and releases.url is not null
 	and shows.ignore ='0'
 	and episodes.downloaded = '0'
+	and releases.timestamp > date_sub(now(), interval 14 day)
 	ORDER BY shows.name, episodes.season ASC , episodes.episode_number ASC , releases.score DESC, releases.priority DESC
 	";
 	$oldshow="";
@@ -921,8 +936,8 @@ function process_favourites() {
 	$got=0;
 	$match=0;
 
-	if ($results=mysql_query($q, $dvrdb)) {
-		while ($rel=mysql_fetch_assoc($results)){
+	if ($results=mysqli_query($dvrdb, $q)) {
+		while ($rel=mysqli_fetch_assoc($results)){
 			$showid=$rel['showid'];
 			$epi=$rel['e_episode'];
 			$seas=$rel['e_season'];
@@ -978,9 +993,9 @@ function process_favourites() {
 						print $err['error']['message'];
 					} else {
 						$got=1;
-						mysql_query("UPDATE `favourites` SET season='$seas', episode='$epi' WHERE favouriteid='".$rel['favouriteid']."';", $dvrdb) or print mysql_error();
-						mysql_query("UPDATE `releases` SET downloaded='1' WHERE releaseid='".$rel['releaseid']."';") or print mysql_error();
-						mysql_query("UPDATE `episodes` SET downloaded='1' WHERE episodeid='".$rel['episodeid']."';") or print mysql_error();
+						mysqli_query($dvrdb, "UPDATE `favourites` SET season='$seas', episode='$epi' WHERE favouriteid='".$rel['favouriteid']."';") or print mysqli_error();
+						mysqli_query($dvrdb, "UPDATE `releases` SET downloaded='1' WHERE releaseid='".$rel['releaseid']."';") or print mysqli_error();
+						mysqli_query($dvrdb, "UPDATE `episodes` SET downloaded='1' WHERE episodeid='".$rel['episodeid']."';") or print mysqli_error();
 					}
 				}
 			}
@@ -1017,7 +1032,7 @@ function swapands($string) {
 function log_it($code,$entry){
 	global $dvrdb;
 	#$entry=addslashes($entry);
-	#mysql_query("INSERT INTO `log` (`error`, `text`) VALUES ('$code', '$entry');", $dvrdb) or print mysql_error();
+	#mysqli_query($dvrdb, "INSERT INTO `log` (`error`, `text`) VALUES ('$code', '$entry');") or print mysqli_error();
 }
 /*---------------------------------------------------------------------------------------------------*/
 function print_html_header() {

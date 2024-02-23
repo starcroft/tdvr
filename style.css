@@ -2,19 +2,21 @@
 #mainbody {
 padding-top:30px;
 margin-top:30px;
+background-color: #111;
 }
-a, a:visited, a:link, a:active, a:hover {
-text-decoration: none;
-font-weight: bold;
-color: #000;
+
+.showlist a:link, a:visited, a:active {
+	text-decoration: none;
+	font-weight: 600;
 }
- a:hover {
- text-decoration: underline;
- font-weight: bolder;
+.showlist a:hover, a:focus {
+	text-decoration: underline;
+	text-decoration-style: dashed;
+	font-weight: 900;
 }
 .showlist, .releaselist {
 width:99%;
-font-size: 0.7em;
+font-size: 1em;
 table-layout: fixed;
 }
 .favcheck:checked {
@@ -23,7 +25,10 @@ table-layout: fixed;
 .showlist tr td, .releaselist tr td {
 padding:7px;
 }
-
+.poster {
+	text-align: center;
+	max-width: 500px;
+}
 .showlist_icon {
 width: 10px;
 text-align:center;
@@ -35,6 +40,10 @@ width: 250px;
 width: 30%;
 min-width: 30%;
 }
+.showlist_name_huge {
+	width: 50%;
+	min-width: 30%;
+	}
 .showlist_season {
 text-align: center;
 width: 20px;

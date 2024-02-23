@@ -1,13 +1,13 @@
--- MySQL dump 10.14  Distrib 5.5.56-MariaDB, for Linux (x86_64)
+-- MariaDB dump 10.19  Distrib 10.6.16-MariaDB, for debian-linux-gnu (aarch64)
 --
 -- Host: localhost    Database: tdvr
 -- ------------------------------------------------------
--- Server version	5.5.56-MariaDB
+-- Server version	10.6.16-MariaDB-0ubuntu0.22.04.1
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8 */;
+/*!40101 SET NAMES utf8mb4 */;
 /*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
 /*!40103 SET TIME_ZONE='+00:00' */;
 /*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
@@ -29,10 +29,10 @@ CREATE TABLE `episodes` (
   `episode_number` varchar(8) NOT NULL,
   `episode_name` varchar(256) NOT NULL,
   `downloaded` tinyint(1) NOT NULL,
-  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `timestamp` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`episodeid`),
   KEY `showid` (`showid`,`timestamp`)
-) ENGINE=MyISAM AUTO_INCREMENT=164056 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=399363 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -45,14 +45,14 @@ DROP TABLE IF EXISTS `favourites`;
 CREATE TABLE `favourites` (
   `favouriteid` mediumint(9) NOT NULL AUTO_INCREMENT,
   `showid` mediumint(9) NOT NULL,
-  `season` tinyint(4) NOT NULL,
-  `episode` tinyint(4) NOT NULL,
-  `location` varchar(128) NOT NULL,
-  `ratio` tinyint(4) NOT NULL,
-  `quality` varchar(128) NOT NULL,
+  `season` tinyint(4) DEFAULT NULL,
+  `episode` tinyint(4) DEFAULT NULL,
+  `location` varchar(128) DEFAULT NULL,
+  `ratio` tinyint(4) DEFAULT NULL,
+  `quality` varchar(128) DEFAULT NULL,
   PRIMARY KEY (`favouriteid`),
   KEY `showid` (`showid`)
-) ENGINE=MyISAM AUTO_INCREMENT=323 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=619 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -69,7 +69,7 @@ CREATE TABLE `feeds` (
   `ratio` varchar(8) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `rank` (`priority`)
-) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -81,12 +81,12 @@ DROP TABLE IF EXISTS `log`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `log` (
   `logid` int(11) NOT NULL AUTO_INCREMENT,
-  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `time` timestamp NOT NULL DEFAULT current_timestamp(),
   `text` varchar(1024) NOT NULL,
   `error` tinyint(4) NOT NULL,
   PRIMARY KEY (`logid`),
   KEY `error` (`error`)
-) ENGINE=MyISAM AUTO_INCREMENT=3314 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=3314 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -108,12 +108,15 @@ CREATE TABLE `releases` (
   `downloaded` tinyint(1) NOT NULL,
   `proper` tinyint(4) NOT NULL,
   `original_name` varchar(128) NOT NULL,
-  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `timestamp` timestamp NOT NULL DEFAULT current_timestamp(),
   `video` varchar(16) NOT NULL,
+  `score` tinyint(4) DEFAULT NULL,
+  `ratio` varchar(5) DEFAULT NULL,
   PRIMARY KEY (`releaseid`),
   KEY `episodeid` (`episodeid`,`quality`,`timestamp`),
-  KEY `movieid` (`movieid`) USING BTREE
-) ENGINE=MyISAM AUTO_INCREMENT=645425 DEFAULT CHARSET=latin1;
+  KEY `score` (`score`),
+  KEY `episodeid_2` (`episodeid`)
+) ENGINE=InnoDB AUTO_INCREMENT=1895684 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -128,13 +131,18 @@ CREATE TABLE `shows` (
   `name` varchar(256) NOT NULL,
   `description` varchar(4096) NOT NULL,
   `category` varchar(64) NOT NULL,
-  `tvdb_id` int(11) NOT NULL,
-  `ignore` tinyint(1) NOT NULL,
+  `year` smallint(6) DEFAULT NULL,
+  `country` varchar(16) DEFAULT NULL,
+  `tvdb_id` int(11) DEFAULT NULL,
+  `tvmaze_id` int(11) DEFAULT NULL,
+  `imdb_id` int(11) DEFAULT NULL,
+  `ignore` tinyint(1) DEFAULT 0,
   `poster` varchar(256) DEFAULT NULL,
-  `updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`showid`),
-  UNIQUE KEY `showlist` (`showid`,`ignore`)
-) ENGINE=MyISAM AUTO_INCREMENT=15513 DEFAULT CHARSET=latin1;
+  UNIQUE KEY `showlist` (`showid`,`ignore`),
+  KEY `tvmaze` (`tvmaze_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=28964 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -146,4 +154,4 @@ CREATE TABLE `shows` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2018-06-20  9:53:18
+-- Dump completed on 2024-02-23 14:12:12

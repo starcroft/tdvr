@@ -5,6 +5,7 @@ error_reporting(E_ERROR | E_PARSE);
 $config=array("api_url"=>getenv('BACKEND_URL'), "api_user"=>getenv('BACKEND_USERNAME'), "api_password"=>getenv('BACKEND_PASSWORD'));
 
 require_once "../TVMaze-PHP-API-Wrapper/TVMazeIncludes.php";
+require_once "./imdbphp/bootstrap.php";
 $tvmaze = new JPinkney\TVMaze\Client;
 $dvrdb = new mysqli(getenv('MARIADB_SERVICE_HOST'), getenv('MYSQL_DB_USERNAME') ,getenv('MYSQL_DB_PASSWORD'), getenv('MYSQL_DB_NAME'))
  or exit('Could not connect: ' . mysql_error());
@@ -21,9 +22,9 @@ $resolution_list=array("720p", "1080p");
 $config['save_dir']="/mnt/stick/done";
 $config['hide_hd']="0";
 $config['quality']=array('hevc','hdtv', 'web', 'pdtv');
-$config['blocked']=array('2160p','vostfr','encodeking', 'micromkv', 'chamee', '4playhd', 'knix', 'evolve', 'subtitulado','Legendado','swesub','hebsub','dutch','Subtitulos','legendas', '-msd', 'german', 'dubbed', 'killers mp4', 'LOL mp4', 'qaac', 'nl subs', 'fqm mp4', 'HD-TS', 'HDTS', ' HC ', ' ita ', 'fum mp4', 'mp4 rar', 'dublado', 'nordic', 'french', 'vose','JBilbo', 'tla mp4', 'vtv mp4');
+$config['blocked']=array('syncopy', '2160p','vostfr','encodeking', 'micromkv', 'chamee', '4playhd', 'knix', 'evolve', 'subtitulado','Legendado','swesub','hebsub','dutch','Subtitulos','legendas', '-msd', 'german', 'dubbed', 'killers mp4', 'LOL mp4', 'qaac', 'nl subs', 'fqm mp4', 'HD-TS', 'HDTS', ' HC ', ' ita ', 'fum mp4', 'mp4 rar', 'dublado', 'nordic', 'french', 'vose','JBilbo', 'tla mp4', 'vtv mp4');
 $config['video_map']=array('h 264' => 'x264', 'mp4' => 'x264', 'x264' => 'x264', 'h264' => 'x264', 'xvid' => 'xvid', 'divx' => 'xvid', 'hevc' => 'x265', 'x265' => 'x265', 'h265' => 'x265');
 $config['resolutions']=array('480p', '720p', '1080p');
-$config['scoring']=array('x265' => 3, 'x264' => 2, 'xvid' => 0, '720p' => 3, 'hdtv' => 2, '1080p' => 0);
+$config['scoring']=array('x265' => 3, 'x264' => 2, 'xvid' => 0, '720p' => 3, 'hdtv' => 0, '1080p' => 1);
 date_default_timezone_set("Europe/London");
 ?>

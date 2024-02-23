@@ -1,5 +1,6 @@
 <?php
-require_once( dirname( __FILE__ ) . '/class/TransmissionRPC.class.php' );
+##require_once( dirname( __FILE__ ) . '/class/TransmissionRPC.class.php' );
+require_once( dirname( __FILE__ ) . '/class/transmission-rpc.class.php' );
 
 function get_torrent_info($torrent_url){
 global $config;
@@ -22,12 +23,13 @@ $id=0;
 
 }
 
-function add_torrent($torrent_url, $download_dir) {
+function add_2_torrent($torrent_url, $download_dir, $ratio = "1.0") {
 global $config;
 $id=0;
+	print "download $torrent_url ".$config['api_url']." ".$config['api_user'];
 	$rpc = new TransmissionRPC($config['api_url'], $config['api_user'], $config['api_password']);
-
-	$result = $rpc->add( (string) $torrent_url, $download_dir ); // Magic happens here :)
+	print "download $torrent_url";
+	$result = $rpc->add( (string) $torrent_url, $download_dir, false, $ratio ); // Magic happens here :)
 	print_r($result);
 	if ($result->result == "success") {
 		$res['error']="";
@@ -37,5 +39,23 @@ $id=0;
 	
 	return($res);
 }
+
+
+function add_torrent($torrent_url, $download_dir, $ratio) {
+global $config;
+$id=0;
+	$rpc = new TransmissionRPC("trans.starcroft.org", 443, $config['api_user'], $config['api_password']);
+	#print "download $torrent_url $ratio";
+	$result = $rpc->addTorrent( $torrent_url, $download_dir, false, $ratio ); // Magic happens here :)
+	#print_r($result);
+	if ($result->result == "success") {
+		$res['error']="";
+	} else {
+		$res['error']=$result->result;
+	}
+	
+	return($res);
+}
+
 
 ?>

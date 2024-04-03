@@ -1,4 +1,4 @@
-function ignoreShow(showid) {
+function ignoreShow(showid, quality) {
 	if (window.XMLHttpRequest) {
 		xmlhttp=new XMLHttpRequest();
 	} else {
@@ -7,13 +7,16 @@ function ignoreShow(showid) {
 
 	xmlhttp.onreadystatechange=function() {
 		if (xmlhttp.readyState==4 && xmlhttp.status==200) {
-			if (xmlhttp.responseText == "ignore") {
-				idname="ignore_icon_" + showid;
-			   document.getElementById(idname).src="ignore.png";
+			if (xmlhttp.responseText.match("ignore")) {
+				$('.ignore_icon_' + showid).each(function() {
+					$(this).attr('src', "ignore.png") ;
+				});
+				delFavourite(showid, quality)
 			}
-			if (xmlhttp.responseText == "show") {
-				idname="ignore_icon_" + showid;
-			   document.getElementById(idname).src="ignore_grey.png";
+			if (xmlhttp.responseText.match("show")) {
+				$('.ignore_icon_' + showid).each(function() {
+					$(this).attr('src', "ignore_grey.png") ;
+				});
 			}
 		}
 	}
@@ -38,7 +41,7 @@ function downloadRelease(releaseid) {
 	xmlhttp.send();
 }
 
-function addFavourite(showid, quality, resolution, video) {
+function delFavourite(showid, quality) {
 	if (window.XMLHttpRequest) {
 		xmlhttp=new XMLHttpRequest();
 	} else {
@@ -48,12 +51,36 @@ function addFavourite(showid, quality, resolution, video) {
 	xmlhttp.onreadystatechange=function() {
 		if (xmlhttp.readyState==4 && xmlhttp.status==200) {
 			if (xmlhttp.responseText == "OK") {
-				idname="favourite_icon_" + showid;
-			document.getElementById(idname).src="favourite.png";
+				$('.favourite_icon_' + showid).each(function() {
+					$(this).attr('src', "favourite_grey.png");
+					$(this).attr("onclick","addFavourite('" + showid + "','" + quality +"');");
+				});
 			}
 		}
 	}
-	xmlhttp.open("GET","?action=addfavourite&showid="+showid+"&quality="+quality+"&resolution="+resolution+"&video="+video,true);
+	xmlhttp.open("GET","?action=delfavourite&showid="+showid,true);
+	xmlhttp.send();
+}
+
+
+function addFavourite(showid, quality) {
+	if (window.XMLHttpRequest) {
+		xmlhttp=new XMLHttpRequest();
+	} else {
+		xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+	}
+
+	xmlhttp.onreadystatechange=function() {
+		if (xmlhttp.readyState==4 && xmlhttp.status==200) {
+			if (xmlhttp.responseText == "OK") {
+				$('.favourite_icon_' + showid).each(function() {
+					$(this).attr('src', "favourite.png");
+					$(this).attr("onclick","delFavourite('" + showid + "','" + quality +"');");
+				});
+			}
+		}
+	}
+	xmlhttp.open("GET","?action=addfavourite&showid="+showid+"&quality="+quality,true);
 	xmlhttp.send();
 }
 function toggleFavourite(favid, quality) {

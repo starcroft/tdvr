@@ -45,13 +45,14 @@ function add_torrent($torrent_url, $download_dir, $ratio) {
 global $config;
 $id=0;
 	$rpc = new TransmissionRPC("trans.starcroft.org", 443, $config['api_user'], $config['api_password']);
-	#print "download $torrent_url $ratio";
+	#print "download $torrent_url $ratio <br>";
 	$result = $rpc->addTorrent( $torrent_url, $download_dir, false, $ratio ); // Magic happens here :)
 	#print_r($result);
-	if ($result->result == "success") {
+	#print "<br>";
+	if ($result == "success") {
 		$res['error']="";
 	} else {
-		$res['error']=$result->result;
+		$res['error']['message']=$result;
 	}
 	
 	return($res);

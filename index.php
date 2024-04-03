@@ -59,6 +59,9 @@ switch ($action) {
 	case "addfavourite":
 		add_favourite($_GET['showid'], $_GET['quality'], $_GET['set']);
 		break;
+	case "delfavourite":
+		del_favourite($_GET['showid']);
+		break;
 	case "setfavourite":
 		set_favourite($_GET['favouriteid'], $_GET['quality'], $_GET['set']);
 		break;
@@ -154,9 +157,6 @@ function add_favourite($showid, $quality="") {
 global $dvrdb;
 	$showid=clean_number($showid);
 	$quality=clean_text($quality);
-	$resolution=clean_text($resolution);
-	$video=clean_text($video);
-
    if ($result=mysqli_query($dvrdb, "SELECT favouriteid FROM favourites WHERE showid = '$showid';")) {
    	if ($res=mysqli_fetch_assoc($result)) {
 			mysqli_query($dvrdb, "UPDATE `favourites`  SET `quality` = '$quality' WHERE `showid` = '$showid';");
@@ -167,6 +167,14 @@ global $dvrdb;
    	}
    }
 }
+/* ===================================================================================== */
+function del_favourite($showid) {
+	global $dvrdb;
+		$showid=clean_number($showid);
+	   if ($result=mysqli_query($dvrdb, "DELETE `favourites` FROM `favourites` WHERE showid = '$showid';")) {
+					print "OK";
+		}
+	}
 /* ===================================================================================== */
 function set_favourite($favourite, $quality, $set) {
 global $dvrdb;
@@ -216,16 +224,17 @@ global $dvrdb;
 	if (mysqli_num_rows($results)>0) {
 		while ($res=mysqli_fetch_assoc($results)) {
 			$showid=$res['showid'];
+			
 			echo "<tr>";
 			if ($res['favouriteid']) {
-			 	echo "<td class='showlist showlist_icon'><img id='favourite_icon_$showid' src='favourite.png' onclick=\"addFavourite($showid, '');\"></td>";
+			 	echo "<td class='showlist showlist_icon'><img class='favourite_icon_$showid' src='favourite.png' onclick=\"delFavourite($showid, '$quality');\"></td>";
 			} else {
-			 	echo "<td class='showlist showlist_icon'><img id='favourite_icon_$showid' src='favourite_grey.png' onclick=\"addFavourite($showid, '');\"></td>";
+			 	echo "<td class='showlist showlist_icon'><img class='favourite_icon_$showid' src='favourite_grey.png' onclick=\"addFavourite($showid, '$quality');\"></td>";
 			}
 			if ($res['ignore']) {
-				echo "<td class='showlist showlist_icon'><img id='ignore_icon_$showid' src='ignore.png' onclick=\"ignoreShow($showid);\"></td>";
+				echo "<td class='showlist showlist_icon'><img class='ignore_icon_$showid' src='ignore.png' onclick=\"ignoreShow($showid, '$quality');\"></td>";
 			}	else {
-				echo "<td class='showlist showlist_icon'><img id='ignore_icon_$showid' src='ignore_grey.png' onclick=\"ignoreShow($showid);\"></td>";
+				echo "<td class='showlist showlist_icon'><img class='ignore_icon_$showid' src='ignore_grey.png' onclick=\"ignoreShow($showid, '$quality');\"></td>";
 			}
 			echo "<td class='showlist showlist_name'><a title='".$res['name']."' href='?showid=".$showid."'>".$res['name']."</a></td>";
 			#echo "<td class='showlist showlist_name_long'>".$res['name']."</td>
@@ -555,7 +564,12 @@ function update_feeds() {
 					$title=$item->title;
 					$category=$item->category;
 					$datestring=$item->pubDate;
-					if (! $url=$item->enclosure['url'][0]) {
+
+					$magnet = $item->children('torrent', True)->magnetURI;
+					if ($magnet != "") {
+						$url=$magnet;
+						$url=preg_replace("#\&amp;#", "&", $url);
+					} elseif (! $url=$item->enclosure['url'][0]) {
 							$url=$item->link;
 					}
 					$stamp=strtotime($datestring);
@@ -773,8 +787,9 @@ global $dvrdb, $config;
 			} else {
 				$ratio = $res['ratio'];
 			}
-			$err=add_torrent($res['url'], $save_dir, $ratio);
-			#print_r($err);
+			$url=preg_replace("#\&amp;#", "&", $res['url']);
+			$err=add_torrent($url, $save_dir, $ratio);
+			print_r($err);
 			if (! $err['error']) {
 					mysqli_query($dvrdb, "UPDATE `releases` SET downloaded='1' WHERE releaseid='$releaseid';") or print mysqli_error();
 					mysqli_query($dvrdb, "UPDATE `episodes` SET downloaded='1' WHERE episodeid='$episodeid';") or print mysqli_error();
@@ -880,14 +895,14 @@ global $dvrdb, $config;
 					$line.= "<td class='showlist showlist_icon'><img id='download_icon_$releaseid' src='download.png' onclick=\"downloadRelease($releaseid);\"/></td>";
 				}
 				if ($relitem['favouriteid']) {
-					$line.="<td class='showlist showlist_icon'><img id='favourite_icon_$showid' src='favourite.png' onclick=\"addFavourite($showid, '$quality');\"></td>";
+					$line.="<td class='showlist showlist_icon'><img class='favourite_icon_$showid' src='favourite.png' onclick=\"delFavourite($showid, '$quality');\"></td>";
 				} else {
-					$line.="<td class='showlist showlist_icon'><img id='favourite_icon_$showid' src='favourite_grey.png' onclick=\"addFavourite($showid, '$quality');\"></td>";
+					$line.="<td class='showlist showlist_icon'><img class='favourite_icon_$showid' src='favourite_grey.png' onclick=\"addFavourite($showid, '$quality');\"></td>";
 				}
 				if ($relitem['ignore']==1) {
-					$line.="<td class='showlist showlist_icon'><img id='ignore_icon_$showid' src='ignore.png' onclick=\"ignoreShow($showid);\"></td>";
+					$line.="<td class='showlist showlist_icon'><img class='ignore_icon_$showid' src='ignore.png' onclick=\"ignoreShow($showid, '$quality');\"></td>";
 				} else {
-					$line.= "<td class='showlist showlist_icon'><img id='ignore_icon_$showid' src='ignore_grey.png' onclick=\"ignoreShow($showid);\"></td>";
+					$line.= "<td class='showlist showlist_icon'><img class='ignore_icon_$showid' src='ignore_grey.png' onclick=\"ignoreShow($showid, '$quality');\"></td>";
 				}
 
 				$line.="<td class='showlist showlist_name'><a title='".$release['original_name']."' href='?showid=".$relitem['showid']."'>".$relitem['name']."</a></td>";
@@ -1037,7 +1052,7 @@ function process_favourites() {
 	and releases.url is not null
 	and shows.ignore ='0'
 	and episodes.downloaded = '0'
-	and releases.timestamp > date_sub(now(), interval 14 day)
+	and releases.timestamp > date_sub(now(), interval 90 day)
 	ORDER BY shows.name, episodes.season ASC , episodes.episode_number ASC , releases.score DESC, releases.priority DESC;
 	";
 	$oldshow="";
@@ -1157,10 +1172,13 @@ function print_html_header() {
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>tellyDvr</title>
-
-	<link rel="stylesheet" type="text/css" href="css/bootstrap.dark2.min.3.css" />
-	<link href="https://netdna.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap-glyphicons.css" rel="stylesheet">
-	<script src="./scripts.js?" type="text/javascript"></script>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+	<link rel="stylesheet" type="text/css" href="css/bootstrap.superhero.4.min.css" />
+	<!-- <link href="https://netdna.bootstrapcdn.com/bootstrap/4.6.2/css/bootstrap-glyphicons.css" rel="stylesheet"> -->
+	<link href="./fontawesome/css/fontawesome.min.css" rel="stylesheet">
+    <link href="./fontawesome/css/brands.min.css" rel="stylesheet">
+    <link href="./fontawesome/css/solid.min.css" rel="stylesheet">
+	<script src="./scripts.js" type="text/javascript"></script>
 	<link rel="stylesheet" type="text/css" href="style.css" />
 	<link rel="shortcut icon" href ="favicon.ico">
 </head>
@@ -1172,11 +1190,15 @@ print_html_nav();
 function print_html_footer() {
 ?>
 	</div>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.6/umd/popper.js"></script>
+    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.6/umd/popper.js"></script> -->
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-beta/js/bootstrap.min.js"></script> -->
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script> -->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js"></script>
+	<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js"></script> -->
+	<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
+
+	
 </body>
 </html>
 <?php
@@ -1187,35 +1209,33 @@ function print_html_nav() {
 $action=$_GET['action'] ? clean_text($_GET['action']) : "listreleases";
 $search=$_GET['search'] ? clean_text($_GET['search']) : "";
 ?>
-    <div class="navbar navbar-default navbar-fixed-top">
+    <div class="navbar navbar-default navbar-expand-lg fixed-top navbar-dark bg-dark">
       <div class="container">
         <div class="navbar-header">
           <a href="?action=listreleases" class="navbar-brand">tellyDvr</a>
-          <button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#navbar-main">
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-main">
+            <span class="navbar-toggler-icon"></span>
           </button>
         </div>
         <div class="navbar-collapse collapse" id="navbar-main">
-          <ul class="nav navbar-nav">
-            <li>
-              <a href="?action=listshows">Shows</a>
+          <ul class="navbar-nav">
+            <li class="nav-item">
+              <a class="nav-link" href="?action=listshows">Shows</a>
             </li>
-            <li>
-              <a href="?action=listfavourites">Favourites</a>
+            <li class="nav-item">
+              <a class="nav-link" href="?action=listfavourites">Favourites</a>
             </li>
-						<li>
-							<a href="?action=update">Update</a>
-						</li>
+			<li class="nav-item">
+				<a class="nav-link" href="?action=update">Update</a>
+			</li>
           </ul>
 		<div class="col-sm-3 col-md-4 col-lg-4 navbar-right">
 			<form class="navbar-form" role="search" action="?action=listshows">
 			<input type="hidden" name="action" value="<?php echo $action; ?>">
 			<div class="input-group">
-				<input type="text" class="form-control" placeholder="Search" name="search" value="<?php echo $search; ?>">
-				<div class="input-group-btn">
-					<button class="btn btn-default" type="submit"><i class="glyphicon glyphicon-search"></i></button>
+				<input type="text" class="form-control" type="search" placeholder="Search" name="search" value="<?php echo $search; ?>">
+				<span class="input-group-append">
+					<button class="btn btn-default" type="submit"><i class="fas fa-search"></i></button>
 				</div>
 			</div>
 			</form>
@@ -1223,7 +1243,6 @@ $search=$_GET['search'] ? clean_text($_GET['search']) : "";
         </div>
       </div>
     </div>
-
     <div id="mainbody" class="container-fluid">
 <?php
 }

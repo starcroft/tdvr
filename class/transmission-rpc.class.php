@@ -52,12 +52,15 @@ class TransmissionRPC
 		#$request['arguments']['seedRatioLimit'] = $ratio;
 		$request["arguments"]["paused"] = (bool)$paused;
 		$response = $this->curl(json_encode($request));
+		#print_r($response);
+		#print("<br>");
 		if (isset($response['response']['arguments']['torrent-added']['id'])) {
-			print "set id" . $id . "  ratio " . $ratio . "<br>";
+			#print "set id" . $id . "  ratio " . $ratio . "<br>";
 			$id=$response['response']['arguments']['torrent-added']['id'];
 			$this->setTorrent($id, $ratio);
+			return('success');
 		}
-		return $response["status_code"] == 200;
+		return($response['status_code'].":".$response['response']['result']);
 	}
 
 	private function setTorrent( $id, $ratio = "1.0" )

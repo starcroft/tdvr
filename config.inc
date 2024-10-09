@@ -22,9 +22,11 @@ $resolution_list=array("720p", "1080p");
 $config['save_dir']="/mnt/stick/done";
 $config['hide_hd']="0";
 $config['quality']=array('hevc','hdtv', 'web', 'pdtv');
-$config['blocked']=array('EDITH', 'syncopy', '2160p','vostfr','encodeking', 'micromkv', 'chamee', '4playhd', 'knix', 'evolve', 'subtitulado','Legendado','swesub','hebsub','dutch','Subtitulos','legendas', '-msd', 'german', 'dubbed', 'killers mp4', 'LOL mp4', 'qaac', 'nl subs', 'fqm mp4', 'HD-TS', 'HDTS', ' HC ', ' ita ', 'fum mp4', 'mp4 rar', 'dublado', 'nordic', 'french', 'vose','JBilbo', 'tla mp4', 'vtv mp4');
+$config['category_ignore']=array('animation', 'anime', 'children', 'sport','music');
+$config['keyword_preferred']=array('megusta', 'elite');
+$config['keyword_ignored']=array('ethel','atmos','multi','amb3r','dsnp', 'movieddl','successfulcrab','EDITH', 'syncopy', '2160p','vostfr','encodeking', 'micromkv', 'chamee', '4playhd', 'knix', 'evolve', 'subtitulado','Legendado','swesub','hebsub','dutch','Subtitulos','legendas', '-msd', 'german', 'dubbed', 'killers mp4', 'LOL mp4', 'qaac', 'nl subs', 'fqm mp4', 'HD-TS', 'HDTS', ' HC ', ' ita ', 'fum mp4', 'mp4 rar', 'dublado', 'nordic', 'french', 'vose','JBilbo', 'tla mp4', 'vtv mp4');
 $config['video_map']=array('h 264' => 'x264', 'mp4' => 'x264', 'x264' => 'x264', 'h264' => 'x264', 'xvid' => 'xvid', 'divx' => 'xvid', 'hevc' => 'x265', 'x265' => 'x265', 'h265' => 'x265');
-$config['resolutions']=array('480p', '720p', '1080p');
-$config['scoring']=array('x265' => 3, 'x264' => 2, 'xvid' => 0, '720p' => 3, 'hdtv' => 0, '1080p' => 1);
+$config['resolutions']=array('480p', '720p', '1080p', '2160p');
+$config['scoring']=array('x265' => 3, 'x264' => 2, 'xvid' => 0, '720p' => 3, 'hdtv' => 0, '1080p' => 2, '2160p' =>0);
 date_default_timezone_set("Europe/London");
 ?>

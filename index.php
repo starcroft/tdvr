@@ -47,7 +47,9 @@ switch ($action) {
 	case "listreleases":
 		list_releases();
 		break;
-
+	case "listshowreleases":
+		list_show_releases($_GET['showid']);
+		break;
 	case "showreleaseinfo":
 		show_release_info($_GET['releaseid']);
 		break;
@@ -79,12 +81,10 @@ switch ($action) {
 
 	case "updatereleasetags":
 		update_release_tags();
-
-	case "dofavourites":
-		process_favourites();
 		break;
+
 	case "updateshowdescription":
-		update_show_desc($_GET['showname']);
+		update_show_desc($_GET['showname'], $_GET['showid']);
 	
 	case "updateepisodedescription":
 		update_episode_desc();
@@ -201,6 +201,58 @@ global $dvrdb;
 	}
 }
 /* ===================================================================================== */
+
+
+function list_show_releases($showid="") {
+	global $dvrdb;
+	print_html_header();
+	$showid=clean_number($showid);
+	if ($showid) {
+		$q="SELECT shows.showid, shows.name, episodes.episode_number, episodes.season, episodes.downloaded as edownloaded, releases.releaseid, releases.priority, releases.downloaded as rdownloaded, releases.timestamp as rtimestamp, releases.original_name, releases.quality, releases.video, releases.score, releases.resolution, releases.url FROM shows
+			LEFT JOIN episodes on episodes.showid = shows.showid
+			LEFT JOIN releases on releases.episodeid = episodes.episodeid
+			WHERE shows.showid = '$showid'
+			ORDER BY releases.`timestamp` DESC
+		;";
+	} else {
+		$q="SELECT shows.showid, shows.name, episodes.episode_number, episodes.season, episodes.downloaded as edownloaded, releases.releaseid, releases.priority, releases.downloaded as rdownloaded, releases.timestamp as rtimestamp, releases.original_name, releases.quality, releases.video, releases.score, releases.resolution, releases.url FROM shows
+			LEFT JOIN episodes on episodes.showid = shows.showid
+			LEFT JOIN releases on releases.episodeid = episodes.episodeid
+			WHERE shows.updated > date_sub(now(), INTERVAL 14 day)
+			AND shows.ignore = 0
+			ORDER BY releases.`timestamp` DESC
+			LIMIT 100
+		;";
+	}
+	$results=mysqli_query($dvrdb, $q);
+	echo "<table id='show_table' class='table table-condensed table-striped table-responsive'>";
+	echo "<tbody>";
+	if (mysqli_num_rows($results)>0) {
+		while ($res=mysqli_fetch_assoc($results)) {
+			echo "<tr><td class='showlist showlist_name'><a title='".$res['name']."' href='?showid=".$res['showid']."'>".$res['name']."</a></td>";
+			$title=$res['original_name'];
+			$releaseid=$res['releaseid'];
+			if ($res['rdownloaded']) {
+				echo "<td class='showlist showlist_icon'><img title='$title' id='download_icon_$releaseid' src='download_done.png' onclick=\"downloadRelease($releaseid);\"/></td>";
+			} else {
+				echo "<td class='showlist showlist_icon'><img title='$title' id='download_icon_$releaseid' src='download.png' onclick=\"downloadRelease($releaseid);\"/></td>";
+			}
+			echo "<td class='showlist showlist_season'>".$res['season']."</td><td class='showlist showlist_season'>".$res['episode_number']."</td>";
+			echo "<td class='showlist showlist_quality hidden-sm hidden-xs' title='score'>".$res['score']."</td>";
+			echo "<td class='showlist showlist_quality hidden-sm hidden-xs' title='priority'>".$res['priority']."</td>";
+			echo "<td class='showlist showlist_quality'><a href='".base_url('filter', $res['resolution'])."'>".$res['resolution']."</a></td>";
+			echo "<td class='showlist showlist_quality'><a href='".base_url('filter', $res['video'])."'>".$res['video']."</a></td>";
+			echo "<td class='showlist showlist_quality'><a href='".base_url('filter', $res['quality'])."'>".$res['quality']."</a></td>";
+			echo "<td class='showlist showlist_description'>".$res['original_name']."</td>";
+			echo "<td class='showlist showlist_description'>".$res['url']."</td>";
+			echo "<td class='showlist showlist_quality hidden-sm hidden-xs'>".Date(DATE_RSS, strtotime($res['rtimestamp']))."</td>";
+			echo "</tr>";
+		}
+	}
+	echo "</tbody></table>";
+	print_html_footer();
+}
+
 function list_shows($search) {
 global $dvrdb;
 	print_html_header();
@@ -212,11 +264,14 @@ global $dvrdb;
 		WHERE shows.name like '%$search%'
 		ORDER BY shows.updated desc";
 	}else{
-		$q="SELECT shows.showid, shows.name, shows.description, shows.category, shows.ignore, favourites.favouriteid
+		$q="SELECT shows.showid, shows.name, shows.description, shows.category, shows.ignore, favourites.favouriteid, episodes.timestamp, shows.updated
 		FROM `shows`
+		LEFT JOIN `episodes` on episodes.showid = shows.showid
 		LEFT JOIN `favourites` on favourites.showid = shows.showid
-#		WHERE `ignore`='0'
-		ORDER BY shows.updated desc";
+        GROUP BY shows.showid
+		ORDER BY episodes.timestamp desc
+		LIMIT 200;
+		";
 	}
 	$results=mysqli_query($dvrdb, $q);
 	echo "<table id='show_table' class='table table-condensed table-striped table-responsive'>";
@@ -286,33 +341,54 @@ global $dvrdb;
 		}
 }
 /* ===================================================================================== */
-function update_show_desc($show_name="") {
-global $dvrdb, $tvdb;
+function update_show_desc($show_name="", $show_id="") {
+global $dvrdb, $tvdb, $config;
 	$show_name=clean_text($show_name);
 	echo "Update show description<br>";
 	if ($show_name) {
-		$results=mysqli_query($dvrdb, "SELECT * from `shows` where (`description`='' or `poster` = '' or `poster` is null or `tvmaze_id` is null or `imdb_id` is null ) and shows.ignore= '0' and `name` like '$show_name';");
+		$results=mysqli_query($dvrdb, "SELECT * from `shows` where (`description` is NULL or `poster` is null or `tvmaze_id` is null or `imdb_id` is null ) and shows.ignore= '0' and `name` like '$show_name';");
+	} elseif ($show_id) {
+		$results=mysqli_query($dvrdb, "SELECT * from `shows` where shows.ignore= '0' and `showid` = '$show_id';");
 	} else {
-		$results=mysqli_query($dvrdb, "SELECT * from `shows` where (`description`='' or `tvmaze_id` is null or `imdb_id` is null) and shows.ignore = '0' and shows.updated > date_sub(now(), INTERVAL 28 day) order by updated DESC limit 100;");
+		#$results=mysqli_query($dvrdb, "SELECT * from `shows` where `description` is NULL or (`tvmaze_id` is null and `imdb_id` is null and `tvdb_id` is null) and shows.updated > date_sub(now(), INTERVAL 90 day) order by updated DESC limit 100;");
+		$results=mysqli_query($dvrdb, "SELECT * from `shows` where (`description` is NULL or (`tvmaze_id` is null and `imdb_id` is null and `tvdb_id` is null)) and shows.ignore = '0' and shows.updated > date_sub(now(), INTERVAL 28 day) order by updated DESC limit 100;");
 	}
 	if (mysqli_num_rows($results)>0) {
 			while ($res=mysqli_fetch_assoc($results)) {
 				$name=$res['name'];
 				$id=$res['showid'];
-				echo $name." ".$id."<br>";
+				#echo $name." ".$id."<br>";
 				$show=get_show_info($name);
-				if ($show['description']) {
-					#print $name."<br>";
-					print_r($show);
-					#print "<hr>";
-					if ($show['imdb_id'] == '') {
-						$show['imdb_id'] = "NULL";
+				$sql = "UPDATE `shows` SET ";
+				$show_category=addslashes($show['category']);
+				foreach ($config['category_ignore'] as $tag) {
+					print ("<br>".$tag."<br>");
+					if (stristr($show_category, $tag)) {
+						$ignore=1;
+						print("Ignoring...");
 					}
-					# `tvdb_id`='".$show['tvdb_id']."',
-					#if ($show['poster'] == "" && $show['tvdb_id'] != "") {
+				}
+				if ($show['description']) {
+					if ($show['imdb_id'] != '') {
+						$sql.="`imdb_id` = '".$show['imdb_id']."',";
+					}
+					if ($show['tvmaze_id'] != '') {
+						$sql.="`tvmaze_id` = '".$show['tvmaze_id']."',";
+					}
+					if ($show['tvdb_id'] != '') {
+						$sql.="`tvdb_id` = '".$show['tvdb_id']."',";
+					}
+					if ($ignore == 1) {
+						$sql.="`ignore` = '1',";
+					}
+					$sql.="`description`='".addslashes($show['description'])."', `category`='".addslashes($show['category'])."', `poster`='".addslashes($show['poster'])."' where showid='$id';";										
+					print("<br>".$sql."<br>");
+				#	if ($show['poster'] == "" && $show['tvdb_id'] != "") {
 				#		$show['poster']=get_tvdb_poster($show['tvdb_id']);
 				#	} 
-					mysqli_query($dvrdb, "UPDATE `shows` SET  `imdb_id` = '".$show['imdb_id']."', `tvdb_id`='".$show['tvdb_id']."', `tvmaze_id`='".$show['tvmaze_id']."', `description`='".addslashes($show['description'])."', `category`='".addslashes($show['category'])."', `poster`='".addslashes($show['poster'])."' where showid='$id';");
+					#mysqli_query($dvrdb, "UPDATE `shows` SET  `imdb_id` = '".$show['imdb_id']."', `tvdb_id`='".$show['tvdb_id']."', `tvmaze_id`='".$show['tvmaze_id']."', `description`='".addslashes($show['description'])."', `category`='".addslashes($show['category'])."', `poster`='".addslashes($show['poster'])."' where showid='$id';");
+					mysqli_query($dvrdb, $sql);
+
 				}	else {
 					print $name." not found<br>";
 				}
@@ -411,6 +487,8 @@ global $tvdb, $tvmaze;
 			$info['country']=$show->country;
 			if (preg_match("/[0-9]{4}/", $show->premiered, $match)) {
 				$info['year']=$match[0];
+			} else {
+				$info['year']="0";
 			}
 			$info['imdb_id']=str_replace("tt", "", $show->externalIDs['imdb']);
 	}
@@ -441,7 +519,7 @@ function match_variations($showname, $name, $year, $country) {
 	$resarray[]=strip_text($name.$country.$year);
 	foreach ($resarray as $variation) {
 		if (strip_text($showname) == $variation) {
-			print "matched $showname $variation <br>";
+			#print "matched $showname $variation <br>";
 			return(True);
 		}
 	}
@@ -577,7 +655,7 @@ function update_feeds() {
 					$title=preg_replace("#\.#", " ",$title);
 					$url=preg_replace("#\]\]>$#","",$url);
 					$blocked=0;
-					foreach ($config['blocked'] as $block) {
+					foreach ($config['keyword_ignored'] as $block) {
 						if (stristr($title, $block)) { $blocked=1; }
 					}
 					if ($blocked ==0 && (preg_match("#(.+)\ss([0-9]+)e([0-9]+)\s(.*)#si", $title, $bits) || preg_match("#(.+)\s([0-9]+)x([0-9]+)\s(.*)#si", $title, $bits) || preg_match("#(.+)\ss([0-9]+)e([0-9]+)e([0-9]+)\s(.*)#si", $title, $bits) )) {
@@ -639,7 +717,8 @@ function update_feeds() {
 function update_release_tags() {
 	global $dvrdb, $config;
 	echo "Update release tags<br>";
-  $result=mysqli_query($dvrdb, "SELECT * FROM releases WHERE (`quality` = '' or `video` = '' or `resolution` = '' or `score` is null) and `timestamp` > date_sub(NOW(), interval 1 day);");
+  #$result=mysqli_query($dvrdb, "SELECT * FROM releases WHERE (`quality` = '' or `video` = '' or `resolution` = '' or `score` is null) and `timestamp` > date_sub(NOW(), interval 1 day);");
+  $result=mysqli_query($dvrdb, "SELECT * FROM releases WHERE `timestamp` > date_sub(NOW(), interval 1 day);");
 	while ($release=mysqli_fetch_assoc($result)) {
 		$quality="unknown";
 		$vcodec="unknown";
@@ -669,6 +748,11 @@ function update_release_tags() {
 		foreach ($config['scoring'] as $tag => $score) {
 			if ($resolution == $tag || $vcodec == $tag) {
 					$totalscore += $score;
+			}
+		}
+		foreach ($config['keyword_preferred'] as $tag) {
+			if (stristr($release['original_name'], $tag)) {
+					$totalscore += 2;
 			}
 		}
 		#print $release['original_name'] . " : " . $vcodec . " - " . $resolution . " - " . $totalscore . "<br>";
@@ -736,7 +820,7 @@ global $dvrdb;
 }
 /*----------------------------------------------------------------------------------------------------*/
 function get_show_id($show_name){
-global $dvrdb;
+global $dvrdb, $config;
 	$show_name=clean_text($show_name);
 	$sql_name=addslashes($show_name);
 	$results=mysqli_query($dvrdb, "SELECT showid from shows where name like '$sql_name';");
@@ -753,6 +837,12 @@ global $dvrdb;
 				$poster=$show_info['poster'];
 				$year=$show_info['year'];
 				$country=$show_info['country'];
+				$ignore=0;
+			}
+			foreach ($config['category_ignore'] as $tag) {
+				if (stristr($show_category, $tag)) {
+					$ignore=1;
+				}
 			}
 			if ($tvmaze_id != "") {
 				if ($imdb_id == "") {
@@ -765,11 +855,19 @@ global $dvrdb;
 				} else {
 					$tvdb_val="'$tvdb_id'";
 				}
-				if (mysqli_query($dvrdb, "INSERT INTO shows (`name`, `description`, `category`, `year`, `country`, `tvmaze_id`, `tvdb_id`, `imdb_id`, `ignore`, `poster`) VALUES ('$sql_name','$show_description', '$show_category', '$year', '$country', '$tvmaze_id', $tvdb_val, $imdb_val, '0', '$poster');") or print mysqli_error()) {
+				if (mysqli_query($dvrdb, "INSERT INTO shows (`name`, `description`, `category`, `year`, `country`, `tvmaze_id`, `tvdb_id`, `imdb_id`, `ignore`, `poster`) VALUES ('$sql_name','$show_description', '$show_category', '$year', '$country', '$tvmaze_id', $tvdb_val, $imdb_val, $ignore, '$poster');") or print mysqli_error()) {
 					return(mysqli_insert_id());
 				} else {
 					print mysqli_error();
 				}
+			} else {
+				# Insert placeholder entry
+				if (mysqli_query($dvrdb, "INSERT INTO shows (`name`) VALUES ('$sql_name');") or print mysqli_error()) {
+					return(mysqli_insert_id());
+				} else {
+					print mysqli_error();
+				}				
+
 			}
 		}
 }
@@ -778,7 +876,10 @@ function download_release($releaseid, $save_dir="") {
 global $dvrdb, $config;
 	$releaseid=clean_number($releaseid);
 
-	if ($results=mysqli_query($dvrdb, "SELECT url, episodeid, ratio FROM releases WHERE releaseid='$releaseid';")) {
+	if ($results=mysqli_query($dvrdb, "SELECT releases.url, releases.episodeid, releases.ratio, episodes.showid, episodes.season, episodes.episode_number, favourites.favouriteid, favourites.season as fseason, favourites.episode as fepisode FROM releases 
+	LEFT JOIN episodes on episodes.episodeid = releases.episodeid
+	LEFT JOIN favourites on favourites.showid = episodes.showid
+	WHERE releaseid='$releaseid';")) {
 		$res=mysqli_fetch_assoc($results);
 		$episodeid=$res['episodeid'];
 		if (! $save_dir) { $save_dir=$config['save_dir']; }
@@ -793,7 +894,13 @@ global $dvrdb, $config;
 			if (! $err['error']) {
 					mysqli_query($dvrdb, "UPDATE `releases` SET downloaded='1' WHERE releaseid='$releaseid';") or print mysqli_error();
 					mysqli_query($dvrdb, "UPDATE `episodes` SET downloaded='1' WHERE episodeid='$episodeid';") or print mysqli_error();
-			} else {
+					if ($res['favouriteid'] != "") {
+						if ($res['season'] > $res['fseason'] || $res['episode_number'] > $res['fepisode']) {
+							print("Update favourite" . $res['favouriteid']);
+							mysqli_query($dvrdb, "UPDATE `favourites` SET `episode`='". $res['episode_number'] . "', `season`='" . $res['season']. "' WHERE `favouriteid`='". $res['favouriteid'] . "';") or print mysqli_error();
+						}
+					}
+			} else { 
 				log_it("3", $err['error']);
 			}
 			#echo "OK";
@@ -853,7 +960,8 @@ global $dvrdb, $config;
 				$imdb="https://www.imdb.com/find?q=$search";
 			}
 			$google="https://google.com/search?q=tv+show+$search";
-			echo "<tr><td class='poster' colspan='3' rowspan='100'><img class='poster' src='$poster' width='100%'/><p><a href='$google' target='_blank'>Google</a></p><p><a href='$imdb' target='_blank'>IMDB</a></p></td><td colspan='10'>".$relitem['description']."</td></tr>";
+			$cats="<p>".$relitem['category']."</p>";
+			echo "<tr><td class='poster' colspan='3' rowspan='100'><img class='poster' src='$poster' width='100%'/><p><a href='$google' target='_blank'>Google</a></p><p><a href='$imdb' target='_blank'>IMDB</a></p>$cats</td><td colspan='10'>".$relitem['description']."</td></tr>";
 		}
 		$epi_num=str_pad($relitem['episode_number'], 2, "0", STR_PAD_LEFT);
 		$season=str_pad($relitem['season'], 2, "0", STR_PAD_LEFT);
@@ -881,7 +989,8 @@ global $dvrdb, $config;
 		} else {
 			$fstring="";
 		}
-		$rel=mysqli_query($dvrdb, "SELECT * FROM `releases` where episodeid='".$relitem['episodeid']."' $fstring group by resolution,video,quality order by score desc $limit;");
+		#$rel=mysqli_query($dvrdb, "SELECT * FROM `releases` where episodeid='".$relitem['episodeid']."' $fstring group by resolution,video,quality order by score desc, priority asc $limit;");
+		$rel=mysqli_query($dvrdb, "SELECT * FROM `releases` where episodeid='".$relitem['episodeid']."' $fstring order by score desc, priority asc $limit;");
 		$done=array();
 		$alldone=0;
 		while ($release=mysqli_fetch_assoc($rel)) {
@@ -889,10 +998,11 @@ global $dvrdb, $config;
 				$releaseid=$release['releaseid'];
 				$quality=$release['resolution']." ".$release['video'];
 				$line= "<tr>";
+				$title=$release['original_name'];
 				if ($release['downloaded'] || $relitem['edownloaded']) {
-					$line.="<td class='showlist showlist_icon'><img id='download_icon_$releaseid' src='download_done.png' onclick=\"downloadRelease($releaseid);\"/></td>";
+					$line.="<td class='showlist showlist_icon'><img title='$title' id='download_icon_$releaseid' src='download_done.png' onclick=\"downloadRelease($releaseid);\"/></td>";
 				} else {
-					$line.= "<td class='showlist showlist_icon'><img id='download_icon_$releaseid' src='download.png' onclick=\"downloadRelease($releaseid);\"/></td>";
+					$line.= "<td class='showlist showlist_icon'><img title='$title' id='download_icon_$releaseid' src='download.png' onclick=\"downloadRelease($releaseid);\"/></td>";
 				}
 				if ($relitem['favouriteid']) {
 					$line.="<td class='showlist showlist_icon'><img class='favourite_icon_$showid' src='favourite.png' onclick=\"delFavourite($showid, '$quality');\"></td>";
@@ -1048,12 +1158,12 @@ function process_favourites() {
 	LEFT JOIN `shows` on shows.showid=favourites.showid
 	LEFT JOIN `episodes` on episodes.showid = shows.showid
 	LEFT JOIN `releases` on releases.episodeid= episodes.episodeid
-	WHERE ((episodes.episode_number = favourites.episode +1 and episodes.season = favourites.season) or (episodes.season > favourites.season) or (favourites.season =0) or favourites.season is NULL)
+	WHERE ((episodes.episode_number = favourites.episode +1 and episodes.season = favourites.season) or (episodes.season > favourites.season and episodes.episode_number = 1) or (favourites.season =0) or favourites.season is NULL)
 	and releases.url is not null
 	and shows.ignore ='0'
 	and episodes.downloaded = '0'
 	and releases.timestamp > date_sub(now(), interval 90 day)
-	ORDER BY shows.name, episodes.season ASC , episodes.episode_number ASC , releases.score DESC, releases.priority DESC;
+	ORDER BY shows.name, episodes.season ASC , episodes.episode_number ASC , releases.score DESC, releases.priority ASC;
 	";
 	$oldshow="";
 	$oldepi="";
@@ -1068,27 +1178,32 @@ function process_favourites() {
 			$seas=$rel['e_season'];
 			if ($showid != $oldshow || $oldepi != $epi || $oldseas != $seas) {
 				$got=0;
-				$match=0;
-				$rmatched=0;
-				$rmatch=0;
-				$vmatched=0;
-				$vmatch=0;
-				$qmatch=0;
-				$qmatched=0;
 			}
+			$match=0;
+			$rmatched=0;
+			$rmatch=0;
+			$vmatched=0;
+			$vmatch=0;
+			$qmatch=0;
+			$qmatched=0;
 			#print $rel['name'] . " : " . $seas."/" . $epi . " " . $rel['url']." ".$rel['ratio']. "</br>" ;
+			
 			if ($got == 0) {
 						$qbits=explode(" ", $rel['quality']);
 						foreach ($qbits as $bit) {
 								if (in_array($bit, $config['resolutions'])) {
 									$rmatch=1;
+									#print("Found res ".$bit."\br");
 									if ($bit == $rel['rresolution']) {
 										$rmatched=1;
+										#print("matched res ".$rel['rresolution']."\br");
 									}
 								}
 								if (in_array($bit, $config['video_map'])) {
 									$vmatch=1;
+									#print("Found video ".$bit."\br");
 									if ($bit == $rel['rvideo']) {
+										#print("matched video ".$rel['rvideo']."\br");
 										$vmatched=1;
 									}
 								}
@@ -1115,7 +1230,8 @@ function process_favourites() {
 					} else {
 						$ratio = $rel['ratio'];
 					}
-					$err=add_torrent($rel['url'], $save_dir, $ratio);
+					$url=preg_replace("#\&amp;#", "&", $rel['url']);
+					$err=add_torrent($url, $save_dir, $ratio);
 					#print "<br>";
 					if ($err['error']) {
 						print $err['error']['message'];
@@ -1144,15 +1260,18 @@ function clean_text($string) {
 		return ($string);
 }
 function strip_text($string) {
-                $string=strtolower(preg_replace("/[^a-z0-9]/i", "", $string));
-                return ($string);
+	#echo "<br>$string = ";
+	$string = iconv('UTF-8','ASCII//TRANSLIT',$string);
+	$string=strtolower(preg_replace("/[^a-z0-9\&]/i", "", $string));
+	#echo "$string ";
+    return ($string);
 }
 function swapands($string) {
 	if (stristr($string, " and ")) {
 		$string=str_replace(" and ", " & ", $string);
 
-	} elseif (stristr($string, " & ")) {
-		$string=str_replace(" & ", " and ", $string);
+	} elseif (stristr($string, "&")) {
+		$string=str_replace("&", " and ", $string);
 	}
 	return ($string);
 }

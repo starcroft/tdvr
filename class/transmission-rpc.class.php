@@ -37,18 +37,22 @@ class TransmissionRPC
 				throw new Exception("Unable to authenticate with server.");
 		}
 	}
-	public function addTorrent( $filename, $download_dir = "", $paused = false, $ratio = "1.0" )
+	public function addTorrent( $filename, $download_dir = "", $paused = false, $ratio = "1.0", $torrent="" )
 	{
 		$request = array("method"=>"torrent-add","arguments"=>array());
-		if( is_readable((string)$filename) )
-		{
+
+		if ($torrent) {
+			$request["arguments"]["metainfo"] = $torrent;
+
+		} elseif (is_readable((string)$filename) ) {
 			$torrent = readfile((string)$filename);
 			$request["arguments"]["metainfo"] = base64_encode($torrent);
-		}
-		else
+		} else {
 			$request["arguments"]["filename"] = (string)$filename;
+		}
 		if( isset($download_dir) )
 			$request["arguments"]["download-dir"] = (string)$download_dir;
+		#print_r($request);
 		#$request['arguments']['seedRatioLimit'] = $ratio;
 		$request["arguments"]["paused"] = (bool)$paused;
 		$response = $this->curl(json_encode($request));

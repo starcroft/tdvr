@@ -33,6 +33,7 @@ function downloadRelease(releaseid) {
 
 	xmlhttp.onreadystatechange=function() {
 		if (xmlhttp.readyState==4 && xmlhttp.status==200) {
+			console.log(xmlhttp.responseText)
 				idname="download_icon_" + releaseid;
 			   document.getElementById(idname).src="download_done.png";
 		}

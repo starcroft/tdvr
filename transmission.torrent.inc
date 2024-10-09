@@ -46,7 +46,11 @@ global $config;
 $id=0;
 	$rpc = new TransmissionRPC("trans.starcroft.org", 443, $config['api_user'], $config['api_password']);
 	#print "download $torrent_url $ratio <br>";
-	$result = $rpc->addTorrent( $torrent_url, $download_dir, false, $ratio ); // Magic happens here :)
+	$b64content="";
+	if (stristr($torrent_url, "http")) {
+		$b64content=download_torrent($torrent_url, "/tmp");
+	}
+	$result = $rpc->addTorrent( $torrent_url, $download_dir, false, $ratio, $b64content ); // Magic happens here :)
 	#print_r($result);
 	#print "<br>";
 	if ($result == "success") {
@@ -58,5 +62,12 @@ $id=0;
 	return($res);
 }
 
+function download_torrent($torrent_url, $path) {
+	$basename=basename($torrent_url);
+	$basename=preg_replace("/\?.*$/", "" ,$basename);
+	$basename=preg_replace("/\s/", ".", $basename);
+	$contents=file_get_contents($torrent_url);
+	return(base64_encode($contents));
+}
 
 ?>

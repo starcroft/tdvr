@@ -12,8 +12,8 @@ if (PHP_SAPI === 'cli') {
 
 
 require "config.inc";
-require "transmission.torrent.inc";
-
+#require "transmission.torrent.inc";
+require "qbitorrent.torrent.inc";
 if (isset($_GET['update]']) && $_GET['update']==1) {
 	update_feeds($urls);
 }
@@ -863,7 +863,7 @@ global $dvrdb, $config;
 			} else {
 				# Insert placeholder entry
 				if (mysqli_query($dvrdb, "INSERT INTO shows (`name`) VALUES ('$sql_name');") or print mysqli_error()) {
-					return(mysqli_insert_id());
+					return(mysqli_insert_id($dvrdb));
 				} else {
 					print mysqli_error();
 				}				

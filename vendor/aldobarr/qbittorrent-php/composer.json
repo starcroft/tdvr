@@ -1,0 +1,21 @@
+{
+    "name": "aldobarr/qbittorrent-php",
+    "description": "An unofficial PHP client for the qbittorrent WebUI API",
+    "type": "library",
+    "require": {
+        "php": ">=8.1",
+        "guzzlehttp/guzzle": "^7.5"
+    },
+    "license": "GPL-3.0-only",
+    "authors": [
+        {
+            "name": "Aldo Barreras",
+            "email": "aldo@barreras.dev"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "AldoBarr\\": "src/"
+        }
+    }
+}
